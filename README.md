@@ -1,6 +1,4 @@
-<<<<<<< HEAD
-# Kakebeshop-backend-dashboard
-=======
+
 # Kakebe Shop Backend Dashboard
 
 A React-based admin dashboard for managing the Kakebe e-commerce backend.
