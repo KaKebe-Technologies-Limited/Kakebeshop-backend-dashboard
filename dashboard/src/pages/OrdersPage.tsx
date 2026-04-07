@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useOrders } from '@/hooks/useOrders'
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell, TableEmpty } from '@/components/ui/table'
@@ -8,11 +9,14 @@ import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { OrderStatusBadge } from '@/components/shared/StatusBadge'
+import { OrderDetailDialog } from '@/components/orders/OrderDetailDialog'
 import { formatUGX, formatDateTime } from '@/lib/utils'
 import type { Order } from '@/types'
 
 export default function OrdersPage() {
   const [sp, setSp] = useSearchParams()
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
+  const [isDetailOpen, setIsDetailOpen] = useState(false)
   const page = parseInt(sp.get('page') ?? '1', 10)
   const search = sp.get('search') ?? ''
   const status = sp.get('status') ?? ''
@@ -26,6 +30,16 @@ export default function OrdersPage() {
 
   const { data, isLoading, error } = useOrders({ page, search: search || undefined, status: status || undefined, ordering: '-created_at' })
   const totalPages = data?.total_pages ?? Math.ceil((data?.count ?? 0) / 20)
+
+  const handleRowClick = (order: Order) => {
+    setSelectedOrderId(order.id)
+    setIsDetailOpen(true)
+  }
+
+  const handleCloseDetail = () => {
+    setIsDetailOpen(false)
+    setSelectedOrderId(null)
+  }
 
   if (error) {
     return (
@@ -73,7 +87,11 @@ export default function OrdersPage() {
                 <TableEmpty colSpan={7} message="No orders found." />
               ) : (
                 data.results.map((o: Order) => (
-                  <TableRow key={o.id}>
+                  <TableRow
+                    key={o.id}
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => handleRowClick(o)}
+                  >
                     <TableCell className="font-mono text-xs font-medium">{o.order_number}</TableCell>
                     <TableCell className="text-sm">{o.buyer_name}</TableCell>
                     <TableCell className="text-sm">{o.merchant_name}</TableCell>
@@ -91,6 +109,12 @@ export default function OrdersPage() {
           <Pagination page={page} totalPages={totalPages} count={data.count} onPage={p => set('page', String(p))} />
         )}
       </Card>
+
+      <OrderDetailDialog
+        orderId={selectedOrderId}
+        open={isDetailOpen}
+        onClose={handleCloseDetail}
+      />
     </div>
   )
 }
