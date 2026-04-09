@@ -1,8 +1,12 @@
 import { useState } from 'react'
-import { useCategoryTree } from '@/hooks/useCategories'
-import { ChevronRight, ChevronDown, FolderOpen, Folder } from 'lucide-react'
+import { useCategoryTree, useCategoryMutations } from '@/hooks/useCategories'
+import { ChevronRight, ChevronDown, FolderOpen, Folder, Plus } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { ActiveBadge } from '@/components/shared/StatusBadge'
 import { formatDate } from '@/lib/utils'
 import type { CategoryTreeNode } from '@/types'
@@ -48,15 +52,44 @@ function TreeNode({ node, depth = 0, selectedId, onSelect }: {
 }
 
 export default function CategoriesPage() {
-  const { data: tree, isLoading } = useCategoryTree()
+  const { data: tree, isLoading, refetch } = useCategoryTree()
+  const { createCategory, deleteCategory } = useCategoryMutations()
   const [selected, setSelected] = useState<CategoryTreeNode | null>(null)
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) return
+    setIsSubmitting(true)
+    try {
+      await createCategory({ name: newCategoryName.trim() })
+      setNewCategoryName('')
+      setShowCreateDialog(false)
+      refetch()
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this category?')) return
+    await deleteCategory(id)
+    if (selected?.id === id) setSelected(null)
+    refetch()
+  }
 
   return (
     <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
       {/* Tree */}
       <Card className="overflow-hidden">
-        <CardHeader className="border-b border-border">
+        <CardHeader className="border-b border-border flex flex-row items-center justify-between">
           <CardTitle>Category Tree</CardTitle>
+          <Button size="sm" onClick={() => setShowCreateDialog(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Add
+          </Button>
         </CardHeader>
         <div className="overflow-y-auto max-h-[calc(100vh-220px)] p-2">
           {isLoading ? (
@@ -133,6 +166,32 @@ export default function CategoriesPage() {
           </div>
         )}
       </Card>
+
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Category</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="name">Category Name</Label>
+              <Input
+                id="name"
+                value={newCategoryName}
+                onChange={e => setNewCategoryName(e.target.value)}
+                placeholder="e.g., Electronics"
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
+            <Button onClick={handleCreateCategory} disabled={isSubmitting || !newCategoryName.trim()}>
+              {isSubmitting ? 'Creating...' : 'Create'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

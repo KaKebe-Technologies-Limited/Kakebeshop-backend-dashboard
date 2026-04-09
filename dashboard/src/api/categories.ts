@@ -38,3 +38,31 @@ export async function fetchAllCategories(): Promise<Category[]> {
   )
   return [first.results, ...remaining.map(r => r.results)].flat()
 }
+
+export interface CreateCategoryPayload {
+  name: string
+  slug?: string
+  icon?: string
+  description?: string | null
+  parent?: string | null
+  allows_order_intent?: boolean
+  allows_cart?: boolean
+  is_contact_only?: boolean
+  is_featured?: boolean
+  sort_order?: number
+  is_active?: boolean
+}
+
+export async function createCategory(payload: CreateCategoryPayload) {
+  const res = await apiClient.post<Category>('/api/v1/categories/', payload)
+  return res.data
+}
+
+export async function updateCategory(id: string, payload: Partial<CreateCategoryPayload>) {
+  const res = await apiClient.patch<Category>(`/api/v1/categories/${id}/`, payload)
+  return res.data
+}
+
+export async function deleteCategory(id: string) {
+  await apiClient.delete(`/api/v1/categories/${id}/`)
+}
