@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog } from '@/components/ui/dialog'
 import { ActiveBadge } from '@/components/shared/StatusBadge'
 import { formatDate } from '@/lib/utils'
 import type { CategoryTreeNode } from '@/types'
@@ -53,7 +53,7 @@ function TreeNode({ node, depth = 0, selectedId, onSelect }: {
 
 export default function CategoriesPage() {
   const { data: tree, isLoading, refetch } = useCategoryTree()
-  const { createCategory, deleteCategory } = useCategoryMutations()
+  const { createCategory } = useCategoryMutations()
   const [selected, setSelected] = useState<CategoryTreeNode | null>(null)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
@@ -72,13 +72,6 @@ export default function CategoriesPage() {
     } finally {
       setIsSubmitting(false)
     }
-  }
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this category?')) return
-    await deleteCategory(id)
-    if (selected?.id === id) setSelected(null)
-    refetch()
   }
 
   return (
@@ -167,11 +160,9 @@ export default function CategoriesPage() {
         )}
       </Card>
 
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create Category</DialogTitle>
-          </DialogHeader>
+      <Dialog open={showCreateDialog} onClose={setShowCreateDialog}>
+        <div className="p-6">
+          <h2 className="text-lg font-semibold mb-4">Create Category</h2>
           <div className="space-y-4 py-4">
             <div>
               <Label htmlFor="name">Category Name</Label>
@@ -184,13 +175,13 @@ export default function CategoriesPage() {
               />
             </div>
           </div>
-          <DialogFooter>
+          <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
             <Button onClick={handleCreateCategory} disabled={isSubmitting || !newCategoryName.trim()}>
               {isSubmitting ? 'Creating...' : 'Create'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </div>
+        </div>
       </Dialog>
     </div>
   )

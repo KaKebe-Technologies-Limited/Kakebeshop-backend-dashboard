@@ -42,9 +42,9 @@ export default function LoginPage() {
     try {
       const result = await adminLogin(data)
       storeLogin(result.tokens, {
-        userId: result.userId,
-        name: result.name,
-        username: result.username,
+        userId: result.user.userId,
+        name: result.user.name,
+        username: result.user.username,
       })
       setFailCount(0)
       navigate(isSafeRedirect(params.get('next')), { replace: true })
