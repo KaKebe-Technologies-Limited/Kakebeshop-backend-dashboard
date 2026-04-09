@@ -160,7 +160,7 @@ export default function CategoriesPage() {
         )}
       </Card>
 
-      <Dialog open={showCreateDialog} onClose={setShowCreateDialog}>
+      <Dialog open={showCreateDialog} onClose={() => setShowCreateDialog(false)}>
         <div className="p-6">
           <h2 className="text-lg font-semibold mb-4">Create Category</h2>
           <div className="space-y-4 py-4">
