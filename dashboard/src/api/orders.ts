@@ -33,3 +33,21 @@ export async function updateOrderStatus(id: string, status: string) {
   const res = await apiClient.patch<Order>(`/api/v1/orders/${id}/update-status/`, { status })
   return res.data
 }
+
+interface CreateOrderPayload {
+  buyer: string
+  merchant: string
+  notes?: string
+  delivery_fee?: string
+  expected_delivery_date?: string
+  items: Array<{
+    listing: string
+    quantity: number
+    unit_price: string
+  }>
+}
+
+export async function createOrder(payload: CreateOrderPayload) {
+  const res = await apiClient.post('/api/v1/orders/', payload)
+  return res.data
+}

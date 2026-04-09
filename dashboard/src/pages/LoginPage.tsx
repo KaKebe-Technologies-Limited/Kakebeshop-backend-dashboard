@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { login } from '@/api/auth'
+import { login as adminLogin } from '@/api/auth'
 import { useAuthStore } from '@/stores/authStore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -40,8 +40,12 @@ export default function LoginPage() {
     }
     setError(null)
     try {
-      const result = await login(data)
-      storeLogin(result.tokens, result.user)
+      const result = await adminLogin(data)
+      storeLogin(result.tokens, {
+        userId: result.userId,
+        name: result.name,
+        username: result.username,
+      })
       setFailCount(0)
       navigate(isSafeRedirect(params.get('next')), { replace: true })
     } catch {
@@ -87,7 +91,7 @@ export default function LoginPage() {
           <form onSubmit={(e) => void handleSubmit(onSubmit)(e)} className="space-y-4">
             <div>
               <label className="mb-1.5 block text-sm font-medium text-foreground">Email</label>
-              <Input type="email" placeholder="admin@kakebe.ug" autoComplete="email" {...register('email')} />
+              <Input type="email" placeholder="admin@kakebeshop.com" autoComplete="email" {...register('email')} />
               {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email.message}</p>}
             </div>
 

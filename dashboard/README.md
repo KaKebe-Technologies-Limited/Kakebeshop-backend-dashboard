@@ -1,3 +1,10 @@
+<<<<<<< HEAD
+<<<<<<< HEAD
+# Kakebeshop-backend-dashboard
+=======
+=======
+
+>>>>>>> 695a41e9e08beb713db046f755a86b4a6a69c22f
 # Kakebe Shop Backend Dashboard
 
 A React-based admin dashboard for managing the Kakebe e-commerce backend.
@@ -70,3 +77,4 @@ VITE_API_URL=your_api_url_here
 ## License
 
 MIT
+>>>>>>> bbb5fee (Initial commit: Kakebe Shop Backend Dashboard)

@@ -1,9 +1,13 @@
 import { Construction } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 
-export default function ComingSoonPage() {
+interface ComingSoonPageProps {
+  title?: string
+}
+
+export default function ComingSoonPage({ title }: ComingSoonPageProps) {
   const { pathname } = useLocation()
-  const name = pathname.replace('/', '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+  const name = title || pathname.replace('/', '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 
   return (
     <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
