@@ -42,8 +42,10 @@ export default function VisitorAnalyticsPage() {
     // Track visitor activity
     trackVisitorActivity(sessionId, pageView)
 
-    // Send ntfy notification for page view
-    ntfyService.notifyPageView(pageView.page_url, navigator.userAgent)
+    // Send ntfy notification for page view (skip crawlers)
+    if (!ntfyService.isBot(navigator.userAgent)) {
+      void ntfyService.notifyPageView(pageView.page_url, navigator.userAgent)
+    }
 
     // Update current page
     setCurrentPage(window.location.pathname)

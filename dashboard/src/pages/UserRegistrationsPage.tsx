@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { Eye } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import apiClient from '@/api/client'
+import { ntfyService } from '@/services/ntfyService'
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell, TableEmpty } from '@/components/ui/table'
 import { TableSkeleton } from '@/components/shared/TableSkeleton'
 import { Pagination } from '@/components/shared/Pagination'
@@ -67,6 +68,14 @@ export default function UserRegistrationsPage() {
   const handleApprove = async (id: string) => {
     try {
       await apiClient.post(`/admin/registrations/${id}/approve`)
+      const approved = data?.results.find(r => r.id === id)
+      if (approved) {
+        void ntfyService.notifyUserRegistered(
+          approved.email || approved.username,
+          'admin approval',
+          navigator.userAgent,
+        )
+      }
       refetch()
     } catch (error) {
       console.error('Failed to approve:', error)

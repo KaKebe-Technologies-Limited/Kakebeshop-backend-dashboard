@@ -25,7 +25,9 @@ export function useVisitorTracking() {
 
     try {
       await trackVisitorActivity(sessionId, pageView)
-      ntfyService.notifyPageView(pageView.page_url, navigator.userAgent)
+      if (!ntfyService.isBot(navigator.userAgent)) {
+        void ntfyService.notifyPageView(pageView.page_url, navigator.userAgent)
+      }
     } catch (error) {
       console.error('Failed to track page view:', error)
     }
@@ -43,7 +45,9 @@ export function useVisitorTracking() {
 
     try {
       await trackVisitorActivity(sessionId, pageView)
-      ntfyService.notifyProductViewed(productTitle, window.location.href, navigator.userAgent)
+      if (!ntfyService.isBot(navigator.userAgent)) {
+        void ntfyService.notifyProductViewed(productTitle, window.location.href, navigator.userAgent)
+      }
     } catch (error) {
       console.error('Failed to track product view:', error)
     }

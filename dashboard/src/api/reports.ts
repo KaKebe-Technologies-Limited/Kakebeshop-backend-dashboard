@@ -14,9 +14,33 @@ export async function fetchTransactions(params: Record<string, unknown> = {}) {
 }
 
 // Banners
+export interface BannerPayload {
+  title: string
+  placement: Banner['placement']
+  image?: string
+  link_url?: string | null
+  is_active?: boolean
+  start_date?: string | null
+  end_date?: string | null
+}
+
 export async function fetchBanners(params: Record<string, unknown> = {}) {
   const res = await apiClient.get<PaginatedResponse<Banner>>('/api/v1/banners/', { params })
   return res.data
+}
+
+export async function createBanner(payload: BannerPayload) {
+  const res = await apiClient.post<Banner>('/api/v1/banners/', payload)
+  return res.data
+}
+
+export async function updateBanner(id: string, payload: Partial<BannerPayload>) {
+  const res = await apiClient.patch<Banner>(`/api/v1/banners/${id}/`, payload)
+  return res.data
+}
+
+export async function deleteBanner(id: string) {
+  await apiClient.delete(`/api/v1/banners/${id}/`)
 }
 
 export async function verifyBanner(id: string) {

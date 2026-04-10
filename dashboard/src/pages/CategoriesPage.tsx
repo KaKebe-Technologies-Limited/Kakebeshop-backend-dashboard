@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useCategoryTree, useCategoryMutations } from '@/hooks/useCategories'
-import { ChevronRight, ChevronDown, FolderOpen, Folder, Plus } from 'lucide-react'
+import { ChevronRight, ChevronDown, FolderOpen, Folder, Plus, Pencil, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -53,10 +53,13 @@ function TreeNode({ node, depth = 0, selectedId, onSelect }: {
 
 export default function CategoriesPage() {
   const { data: tree, isLoading, refetch } = useCategoryTree()
-  const { createCategory } = useCategoryMutations()
+  const { createCategory, updateCategory, deleteCategory } = useCategoryMutations()
   const [selected, setSelected] = useState<CategoryTreeNode | null>(null)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
+  const [editCategoryName, setEditCategoryName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleCreateCategory = async () => {
@@ -66,6 +69,41 @@ export default function CategoriesPage() {
       await createCategory({ name: newCategoryName.trim() })
       setNewCategoryName('')
       setShowCreateDialog(false)
+      refetch()
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const openEditDialog = () => {
+    if (!selected) return
+    setEditCategoryName(selected.name)
+    setShowEditDialog(true)
+  }
+
+  const handleEditCategory = async () => {
+    if (!selected || !editCategoryName.trim()) return
+    setIsSubmitting(true)
+    try {
+      await updateCategory({ id: selected.id, data: { name: editCategoryName.trim() } })
+      setShowEditDialog(false)
+      refetch()
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleDeleteCategory = async () => {
+    if (!selected) return
+    setIsSubmitting(true)
+    try {
+      await deleteCategory(selected.id)
+      setShowDeleteDialog(false)
+      setSelected(null)
       refetch()
     } catch (e) {
       console.error(e)
@@ -106,12 +144,23 @@ export default function CategoriesPage() {
           </div>
         ) : (
           <div>
-            <CardHeader className="border-b border-border">
-              <div className="flex items-center gap-2 flex-wrap">
-                <CardTitle>{selected.name}</CardTitle>
-                <ActiveBadge active={selected.is_active} />
-                {selected.is_featured && <Badge variant="warning">Featured</Badge>}
-              </div>
+              <CardHeader className="border-b border-border">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <CardTitle>{selected.name}</CardTitle>
+                    <ActiveBadge active={selected.is_active} />
+                    {selected.is_featured && <Badge variant="warning">Featured</Badge>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant="outline" onClick={openEditDialog}>
+                      <Pencil className="h-4 w-4 mr-1" /> Edit
+                    </Button>
+                    <Button size="sm" variant="destructive" onClick={() => setShowDeleteDialog(true)}>
+                      <Trash2 className="h-4 w-4 mr-1" /> Delete
+                    </Button>
+                  </div>
+                </div>
+
               {selected.parent_name && (
                 <p className="text-xs text-muted-foreground mt-0.5">Under: {selected.parent_name}</p>
               )}
@@ -179,6 +228,45 @@ export default function CategoriesPage() {
             <Button variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
             <Button onClick={handleCreateCategory} disabled={isSubmitting || !newCategoryName.trim()}>
               {isSubmitting ? 'Creating...' : 'Create'}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      <Dialog open={showEditDialog} onClose={() => setShowEditDialog(false)}>
+        <div className="p-6">
+          <h2 className="text-lg font-semibold mb-4">Edit Category</h2>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="edit-name">Category Name</Label>
+              <Input
+                id="edit-name"
+                value={editCategoryName}
+                onChange={e => setEditCategoryName(e.target.value)}
+                placeholder="e.g., Electronics"
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>Cancel</Button>
+            <Button onClick={handleEditCategory} disabled={isSubmitting || !editCategoryName.trim()}>
+              {isSubmitting ? 'Saving...' : 'Save changes'}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      <Dialog open={showDeleteDialog} onClose={() => setShowDeleteDialog(false)}>
+        <div className="p-6">
+          <h2 className="text-lg font-semibold mb-2">Delete Category</h2>
+          <p className="text-sm text-muted-foreground">
+            This will permanently delete <span className="font-medium text-foreground">{selected?.name}</span>.
+          </p>
+          <div className="mt-6 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteCategory} disabled={isSubmitting}>
+              {isSubmitting ? 'Deleting...' : 'Delete'}
             </Button>
           </div>
         </div>

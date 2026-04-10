@@ -66,7 +66,12 @@ export default function OrderCreationForm({ onSuccess }: OrderCreationFormProps)
       await createOrder(payload)
       
       // Send ntfy notification
-      ntfyService.notifyOrderPlaced('MANUAL_ORDER', payload.items.reduce((sum, item) => sum + (parseFloat(item.unit_price) * item.quantity), 0).toString(), data.buyer)
+      void ntfyService.notifyOrderPlaced(
+        'MANUAL_ORDER',
+        payload.items.reduce((sum, item) => sum + (parseFloat(item.unit_price) * item.quantity), 0).toString(),
+        data.buyer,
+        navigator.userAgent,
+      )
       
       reset()
       setItems([{ listing: '', quantity: 1, unit_price: '' }])

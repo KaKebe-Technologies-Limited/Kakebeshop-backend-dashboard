@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
-import { fetchListings, type ListingFilters } from '@/api/listings'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { fetchListings, updateListing, type ListingFilters, type UpdateListingPayload } from '@/api/listings'
 import { queryKeys } from '@/lib/queryKeys'
 
 export function useListings(filters: ListingFilters = {}) {
@@ -9,4 +9,20 @@ export function useListings(filters: ListingFilters = {}) {
     placeholderData: prev => prev,
     staleTime: 30_000,
   })
+}
+
+export function useListingMutations() {
+  const qc = useQueryClient()
+
+  const update = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateListingPayload }) => updateListing(id, data),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.listings.all })
+    },
+  })
+
+  return {
+    updateListing: update.mutateAsync,
+    isUpdating: update.isPending,
+  }
 }

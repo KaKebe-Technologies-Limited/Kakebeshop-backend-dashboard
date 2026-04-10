@@ -24,6 +24,21 @@ export async function fetchListingById(id: string) {
   return res.data
 }
 
+export interface UpdateListingPayload {
+  title?: string
+  category?: string
+  is_featured?: boolean
+  is_verified?: boolean
+  price?: string | null
+  price_min?: string | null
+  price_max?: string | null
+}
+
+export async function updateListing(id: string, payload: UpdateListingPayload) {
+  const res = await apiClient.patch<Listing>(`/api/v1/listings/${id}/`, payload)
+  return res.data
+}
+
 export async function fetchFeaturedListings() {
   const res = await apiClient.get<PaginatedResponse<Listing>>('/api/v1/listings/featured/')
   return res.data

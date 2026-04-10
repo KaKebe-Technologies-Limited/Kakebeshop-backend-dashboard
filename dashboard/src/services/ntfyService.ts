@@ -5,6 +5,7 @@ interface NotifyOptions {
   title?: string
   tags?: string[]
   priority?: 'max' | 'high' | 'default' | 'low' | 'min'
+  userAgent?: string
 }
 
 const BOT_USER_AGENTS = [
@@ -20,7 +21,8 @@ export const ntfyService = {
     await this.sendNotification({
       title: 'Page View',
       tags: ['eye'],
-      priority: 'low'
+      priority: 'low',
+      userAgent,
     }, `Page: ${pageUrl}\nUser-Agent: ${userAgent.substring(0, 50)}`)
   },
 
@@ -28,16 +30,27 @@ export const ntfyService = {
     await this.sendNotification({
       title: 'Product Viewed',
       tags: ['shopping_cart'],
-      priority: 'default'
+      priority: 'default',
+      userAgent,
     }, `Product: ${productTitle}\nPage: ${pageUrl}\nUser-Agent: ${userAgent.substring(0, 50)}`)
   },
 
-  async notifyOrderPlaced(orderType: string, total: string, buyer: string): Promise<void> {
+  async notifyOrderPlaced(orderType: string, total: string, buyer: string, userAgent: string): Promise<void> {
     await this.sendNotification({
       title: 'New Order Placed',
       tags: ['shopping_cart', 'bell'],
-      priority: 'high'
+      priority: 'high',
+      userAgent,
     }, `Order Type: ${orderType}\nTotal: ${total}\nBuyer: ${buyer}`)
+  },
+
+  async notifyUserRegistered(userIdentifier: string, source: string, userAgent: string): Promise<void> {
+    await this.sendNotification({
+      title: 'New Account Created',
+      tags: ['bust_in_silhouette', 'tada'],
+      priority: 'default',
+      userAgent,
+    }, `User: ${userIdentifier}\nSource: ${source}`)
   },
 
   isBot(userAgent: string): boolean {
@@ -45,6 +58,10 @@ export const ntfyService = {
   },
 
   async sendNotification(options: NotifyOptions, message: string): Promise<void> {
+    if (options.userAgent && this.isBot(options.userAgent)) {
+      return
+    }
+
     try {
       await fetch(`${NTFY_URL}/${NTFY_TOPIC}`, {
         method: 'POST',
