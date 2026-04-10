@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchListings, updateListing, type ListingFilters, type UpdateListingPayload } from '@/api/listings'
+import { fetchListings, updateListing, deleteListing, type ListingFilters, type UpdateListingPayload } from '@/api/listings'
 import { queryKeys } from '@/lib/queryKeys'
 
 export function useListings(filters: ListingFilters = {}) {
@@ -21,8 +21,17 @@ export function useListingMutations() {
     },
   })
 
+  const remove = useMutation({
+    mutationFn: deleteListing,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.listings.all })
+    },
+  })
+
   return {
     updateListing: update.mutateAsync,
+    deleteListing: remove.mutateAsync,
     isUpdating: update.isPending,
+    isDeleting: remove.isPending,
   }
 }

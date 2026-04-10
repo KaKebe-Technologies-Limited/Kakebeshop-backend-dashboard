@@ -39,6 +39,10 @@ export async function updateListing(id: string, payload: UpdateListingPayload) {
   return res.data
 }
 
+export async function deleteListing(id: string) {
+  await apiClient.delete(`/api/v1/listings/${id}/`)
+}
+
 export async function fetchFeaturedListings() {
   const res = await apiClient.get<PaginatedResponse<Listing>>('/api/v1/listings/featured/')
   return res.data

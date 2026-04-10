@@ -16,6 +16,7 @@ import { formatPriceRange, formatDate } from '@/lib/utils'
 import { Dialog } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useToast } from '@/components/ui/use-toast'
 import type { Listing } from '@/types'
 
 export default function ListingsPage() {
@@ -27,13 +28,15 @@ export default function ListingsPage() {
   const category = sp.get('category') ?? ''
 
   const [editing, setEditing] = useState<Listing | null>(null)
+  const [deleting, setDeleting] = useState<Listing | null>(null)
   const [title, setTitle] = useState('')
   const [editCategory, setEditCategory] = useState('')
   const [price, setPrice] = useState('')
   const [priceMin, setPriceMin] = useState('')
   const [priceMax, setPriceMax] = useState('')
   const [isFeaturedEdit, setIsFeaturedEdit] = useState(false)
-  const [isVerifiedEdit, setIsVerifiedEdit] = useState(false)
+
+  const { toast } = useToast()
 
   function set(key: string, val: string) {
     const next = new URLSearchParams(sp)
@@ -52,7 +55,7 @@ export default function ListingsPage() {
   })
 
   const { data: catData } = useCategories({ page: 1 })
-  const { updateListing, isUpdating } = useListingMutations()
+  const { updateListing, deleteListing, isUpdating, isDeleting } = useListingMutations()
   const totalPages = data?.total_pages ?? Math.ceil((data?.count ?? 0) / 20)
 
   const canSave = useMemo(() => !!editing && !!title.trim(), [editing, title])
@@ -66,7 +69,6 @@ export default function ListingsPage() {
     setPriceMin(listing.price_min ?? '')
     setPriceMax(listing.price_max ?? '')
     setIsFeaturedEdit(listing.is_featured)
-    setIsVerifiedEdit(listing.is_verified)
   }
 
   const closeEditor = () => {
@@ -77,30 +79,72 @@ export default function ListingsPage() {
     setPriceMin('')
     setPriceMax('')
     setIsFeaturedEdit(false)
-    setIsVerifiedEdit(false)
+  }
+
+  const getErrorMessage = (error: unknown) => {
+    if (typeof error === 'object' && error !== null && 'response' in error) {
+      const responseData = (error as { response?: { data?: unknown } }).response?.data
+      if (typeof responseData === 'string') return responseData
+      if (typeof responseData === 'object' && responseData !== null) {
+        const first = Object.values(responseData as Record<string, unknown>)[0]
+        if (Array.isArray(first) && first.length > 0) return String(first[0])
+      }
+    }
+    return 'Request failed. Check API permissions and payload fields.'
   }
 
   const saveListing = async () => {
     if (!editing || !canSave) return
-    await updateListing({
-      id: editing.id,
-      data: {
-        title: title.trim(),
-        category: editCategory || undefined,
-        is_featured: isFeaturedEdit,
-        is_verified: isVerifiedEdit,
-        price: price || null,
-        price_min: priceMin || null,
-        price_max: priceMax || null,
-      },
-    })
-    closeEditor()
+
+    const payload: Record<string, unknown> = {}
+
+    if (title.trim() !== editing.title) payload.title = title.trim()
+    if (editCategory) payload.category = editCategory
+    if (isFeaturedEdit !== editing.is_featured) payload.is_featured = isFeaturedEdit
+
+    if ((editing.price ?? '') !== price) payload.price = price || null
+    if ((editing.price_min ?? '') !== priceMin) payload.price_min = priceMin || null
+    if ((editing.price_max ?? '') !== priceMax) payload.price_max = priceMax || null
+
+    if (Object.keys(payload).length === 0) {
+      toast({ title: 'No changes', description: 'Nothing to update for this listing.' })
+      closeEditor()
+      return
+    }
+
+    try {
+      await updateListing({ id: editing.id, data: payload })
+      toast({ title: 'Listing updated', description: 'Changes were saved to the backend.' })
+      closeEditor()
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Update failed',
+        description: getErrorMessage(error),
+      })
+    }
+  }
+
+  const confirmDelete = async () => {
+    if (!deleting) return
+
+    try {
+      await deleteListing(deleting.id)
+      toast({ title: 'Listing deleted', description: 'Listing was removed successfully.' })
+      setDeleting(null)
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Delete failed',
+        description: getErrorMessage(error),
+      })
+    }
   }
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <SearchInput value={search} onChange={v => set('search', v)} placeholder="Search listings…" className="w-64" />
+        <SearchInput value={search} onChange={v => set('search', v)} placeholder="Search listings..." className="w-64" />
         <Select value={type} onChange={e => set('type', e.target.value)} className="w-36">
           <option value="">All types</option>
           <option value="PRODUCT">Products</option>
@@ -134,7 +178,7 @@ export default function ListingsPage() {
               <TableHead>Views</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Created</TableHead>
-              <TableHead className="w-24">Actions</TableHead>
+              <TableHead className="w-40">Actions</TableHead>
             </TableRow>
           </TableHeader>
           {isLoading ? (
@@ -172,12 +216,15 @@ export default function ListingsPage() {
                       <div className="flex gap-1 flex-wrap">
                         {l.is_verified && <Badge variant="success">Verified</Badge>}
                         {l.is_featured && <Badge variant="warning">Featured</Badge>}
-                        {!l.is_verified && !l.is_featured && <Badge variant="muted">—</Badge>}
+                        {!l.is_verified && !l.is_featured && <Badge variant="muted">-</Badge>}
                       </div>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{formatDate(l.created_at)}</TableCell>
                     <TableCell>
-                      <Button size="sm" variant="outline" onClick={() => openEditor(l)}>Edit</Button>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => openEditor(l)}>Edit</Button>
+                        <Button size="sm" variant="destructive" onClick={() => setDeleting(l)}>Delete</Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -222,21 +269,29 @@ export default function ListingsPage() {
             </div>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={isFeaturedEdit} onChange={e => setIsFeaturedEdit(e.target.checked)} />
-              Featured listing
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={isVerifiedEdit} onChange={e => setIsVerifiedEdit(e.target.checked)} />
-              Verified listing
-            </label>
-          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={isFeaturedEdit} onChange={e => setIsFeaturedEdit(e.target.checked)} />
+            Featured listing
+          </label>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={closeEditor}>Cancel</Button>
             <Button onClick={() => void saveListing()} disabled={!canSave || isUpdating}>
               {isUpdating ? 'Saving...' : 'Save changes'}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      <Dialog open={!!deleting} onClose={() => setDeleting(null)} title="Delete Listing">
+        <div className="p-6">
+          <p className="text-sm text-muted-foreground">
+            This will permanently delete <span className="font-medium text-foreground">{deleting?.title}</span>.
+          </p>
+          <div className="mt-6 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setDeleting(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => void confirmDelete()} disabled={isDeleting}>
+              {isDeleting ? 'Deleting...' : 'Delete'}
             </Button>
           </div>
         </div>
