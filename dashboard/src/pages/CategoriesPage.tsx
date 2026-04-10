@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useCategoryTree, useCategoryMutations } from '@/hooks/useCategories'
 import { ChevronRight, ChevronDown, FolderOpen, Folder, Plus, Pencil, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -6,7 +6,9 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select } from '@/components/ui/select'
 import { Dialog } from '@/components/ui/dialog'
+import { useToast } from '@/components/ui/use-toast'
 import { ActiveBadge } from '@/components/shared/StatusBadge'
 import { formatDate } from '@/lib/utils'
 import type { CategoryTreeNode } from '@/types'
@@ -51,27 +53,72 @@ function TreeNode({ node, depth = 0, selectedId, onSelect }: {
   )
 }
 
+function flattenTree(nodes: CategoryTreeNode[], depth = 0): Array<{ id: string; name: string; depth: number }> {
+  return nodes.flatMap((node) => {
+    const current = [{ id: node.id, name: node.name, depth }]
+    return [...current, ...flattenTree(node.children, depth + 1)]
+  })
+}
+
 export default function CategoriesPage() {
   const { data: tree, isLoading, refetch } = useCategoryTree()
   const { createCategory, updateCategory, deleteCategory } = useCategoryMutations()
+  const { toast } = useToast()
+
   const [selected, setSelected] = useState<CategoryTreeNode | null>(null)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+
   const [newCategoryName, setNewCategoryName] = useState('')
+  const [createType, setCreateType] = useState<'parent' | 'child'>('parent')
+  const [createParentId, setCreateParentId] = useState('')
+
   const [editCategoryName, setEditCategoryName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const treeNodes = (tree as unknown as CategoryTreeNode[] ?? [])
+  const flatCategories = useMemo(() => flattenTree(treeNodes), [treeNodes])
+
+  const getErrorMessage = (error: unknown) => {
+    if (typeof error === 'object' && error !== null && 'response' in error) {
+      const responseData = (error as { response?: { data?: unknown } }).response?.data
+      if (typeof responseData === 'string') return responseData
+      if (typeof responseData === 'object' && responseData !== null) {
+        const first = Object.values(responseData as Record<string, unknown>)[0]
+        if (Array.isArray(first) && first.length > 0) return String(first[0])
+      }
+    }
+    return 'Request failed. Check backend validation and permissions.'
+  }
+
+  const resetCreateForm = () => {
+    setNewCategoryName('')
+    setCreateType('parent')
+    setCreateParentId('')
+  }
+
+  const closeCreateDialog = () => {
+    setShowCreateDialog(false)
+    resetCreateForm()
+  }
+
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) return
+    if (createType === 'child' && !createParentId) return
+
     setIsSubmitting(true)
     try {
-      await createCategory({ name: newCategoryName.trim() })
-      setNewCategoryName('')
-      setShowCreateDialog(false)
+      const payload = createType === 'child'
+        ? { name: newCategoryName.trim(), parent: createParentId }
+        : { name: newCategoryName.trim() }
+
+      await createCategory(payload)
+      toast({ title: 'Category created', description: 'Category was created successfully.' })
+      closeCreateDialog()
       refetch()
     } catch (e) {
-      console.error(e)
+      toast({ variant: 'destructive', title: 'Create failed', description: getErrorMessage(e) })
     } finally {
       setIsSubmitting(false)
     }
@@ -88,10 +135,11 @@ export default function CategoriesPage() {
     setIsSubmitting(true)
     try {
       await updateCategory({ id: selected.id, data: { name: editCategoryName.trim() } })
+      toast({ title: 'Category updated', description: 'Category changes saved successfully.' })
       setShowEditDialog(false)
       refetch()
     } catch (e) {
-      console.error(e)
+      toast({ variant: 'destructive', title: 'Update failed', description: getErrorMessage(e) })
     } finally {
       setIsSubmitting(false)
     }
@@ -102,11 +150,12 @@ export default function CategoriesPage() {
     setIsSubmitting(true)
     try {
       await deleteCategory(selected.id)
+      toast({ title: 'Category deleted', description: 'Category was deleted successfully.' })
       setShowDeleteDialog(false)
       setSelected(null)
       refetch()
     } catch (e) {
-      console.error(e)
+      toast({ variant: 'destructive', title: 'Delete failed', description: getErrorMessage(e) })
     } finally {
       setIsSubmitting(false)
     }
@@ -114,7 +163,6 @@ export default function CategoriesPage() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
-      {/* Tree */}
       <Card className="overflow-hidden">
         <CardHeader className="border-b border-border flex flex-row items-center justify-between">
           <CardTitle>Category Tree</CardTitle>
@@ -128,14 +176,13 @@ export default function CategoriesPage() {
               <div key={i} className="mx-3 my-2 h-4 rounded shimmer" style={{ width: `${50 + (i % 3) * 15}%` }} />
             ))
           ) : (
-            (tree as unknown as CategoryTreeNode[] ?? []).map(node => (
+            treeNodes.map(node => (
               <TreeNode key={node.id} node={node} selectedId={selected?.id ?? null} onSelect={setSelected} />
             ))
           )}
         </div>
       </Card>
 
-      {/* Detail */}
       <Card>
         {!selected ? (
           <div className="flex flex-col items-center justify-center h-full min-h-[300px] gap-2 text-muted-foreground">
@@ -144,29 +191,28 @@ export default function CategoriesPage() {
           </div>
         ) : (
           <div>
-              <CardHeader className="border-b border-border">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <CardTitle>{selected.name}</CardTitle>
-                    <ActiveBadge active={selected.is_active} />
-                    {selected.is_featured && <Badge variant="warning">Featured</Badge>}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button size="sm" variant="outline" onClick={openEditDialog}>
-                      <Pencil className="h-4 w-4 mr-1" /> Edit
-                    </Button>
-                    <Button size="sm" variant="destructive" onClick={() => setShowDeleteDialog(true)}>
-                      <Trash2 className="h-4 w-4 mr-1" /> Delete
-                    </Button>
-                  </div>
+            <CardHeader className="border-b border-border">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <CardTitle>{selected.name}</CardTitle>
+                  <ActiveBadge active={selected.is_active} />
+                  {selected.is_featured && <Badge variant="warning">Featured</Badge>}
                 </div>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="outline" onClick={openEditDialog}>
+                    <Pencil className="h-4 w-4 mr-1" /> Edit
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => setShowDeleteDialog(true)}>
+                    <Trash2 className="h-4 w-4 mr-1" /> Delete
+                  </Button>
+                </div>
+              </div>
 
               {selected.parent_name && (
                 <p className="text-xs text-muted-foreground mt-0.5">Under: {selected.parent_name}</p>
               )}
             </CardHeader>
             <CardContent className="space-y-5">
-              {/* Behaviour flags */}
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Commerce Behaviour</p>
                 <div className="flex flex-wrap gap-2">
@@ -182,7 +228,6 @@ export default function CategoriesPage() {
                 </div>
               </div>
 
-              {/* Meta */}
               <div className="grid grid-cols-2 gap-4 text-sm">
                 {[
                   { label: 'Slug', value: selected.slug },
@@ -209,7 +254,7 @@ export default function CategoriesPage() {
         )}
       </Card>
 
-      <Dialog open={showCreateDialog} onClose={() => setShowCreateDialog(false)}>
+      <Dialog open={showCreateDialog} onClose={closeCreateDialog}>
         <div className="p-6">
           <h2 className="text-lg font-semibold mb-4">Create Category</h2>
           <div className="space-y-4 py-4">
@@ -223,10 +268,49 @@ export default function CategoriesPage() {
                 className="mt-1"
               />
             </div>
+
+            <div>
+              <Label htmlFor="category-type">Category Type</Label>
+              <Select
+                id="category-type"
+                value={createType}
+                onChange={e => {
+                  const next = e.target.value as 'parent' | 'child'
+                  setCreateType(next)
+                  if (next === 'parent') setCreateParentId('')
+                }}
+                className="mt-1"
+              >
+                <option value="parent">Parent category</option>
+                <option value="child">Child category</option>
+              </Select>
+            </div>
+
+            {createType === 'child' && (
+              <div>
+                <Label htmlFor="parent-category">Parent Category</Label>
+                <Select
+                  id="parent-category"
+                  value={createParentId}
+                  onChange={e => setCreateParentId(e.target.value)}
+                  className="mt-1"
+                >
+                  <option value="">Select parent category</option>
+                  {flatCategories.map(categoryOption => (
+                    <option key={categoryOption.id} value={categoryOption.id}>
+                      {`${'-- '.repeat(categoryOption.depth)}${categoryOption.name}`}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            )}
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
-            <Button onClick={handleCreateCategory} disabled={isSubmitting || !newCategoryName.trim()}>
+            <Button variant="outline" onClick={closeCreateDialog}>Cancel</Button>
+            <Button
+              onClick={handleCreateCategory}
+              disabled={isSubmitting || !newCategoryName.trim() || (createType === 'child' && !createParentId)}
+            >
               {isSubmitting ? 'Creating...' : 'Create'}
             </Button>
           </div>
@@ -263,6 +347,11 @@ export default function CategoriesPage() {
           <p className="text-sm text-muted-foreground">
             This will permanently delete <span className="font-medium text-foreground">{selected?.name}</span>.
           </p>
+          {selected && selected.children_count > 0 && (
+            <p className="mt-2 text-xs text-amber-600">
+              This category has child categories. Backend may block deletion until children are moved or deleted.
+            </p>
+          )}
           <div className="mt-6 flex justify-end gap-2">
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
             <Button variant="destructive" onClick={handleDeleteCategory} disabled={isSubmitting}>
