@@ -60,6 +60,17 @@ function flattenTree(nodes: CategoryTreeNode[], depth = 0): Array<{ id: string; 
   })
 }
 
+/**
+ * Recursively filter out soft-deleted (is_active=false) nodes from the tree.
+ * The backend may soft-delete by setting is_active=false rather than removing
+ * the record, so we strip those nodes before rendering.
+ */
+function filterActiveNodes(nodes: CategoryTreeNode[]): CategoryTreeNode[] {
+  return nodes
+    .filter(n => n.is_active !== false)
+    .map(n => ({ ...n, children: filterActiveNodes(n.children) }))
+}
+
 export default function CategoriesPage() {
   const { data: tree, isLoading, refetch } = useCategoryTree()
   const { createCategory, updateCategory, deleteCategory } = useCategoryMutations()
@@ -77,7 +88,10 @@ export default function CategoriesPage() {
   const [editCategoryName, setEditCategoryName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const treeNodes = (tree as unknown as CategoryTreeNode[] ?? [])
+  const rawTreeNodes = (tree as unknown as CategoryTreeNode[] ?? [])
+  // Filter out soft-deleted nodes (is_active=false) - backend may soft-delete
+  // rather than physically remove records, keeping them in the queryset.
+  const treeNodes = useMemo(() => filterActiveNodes(rawTreeNodes), [rawTreeNodes])
   const flatCategories = useMemo(() => flattenTree(treeNodes), [treeNodes])
 
   const getErrorMessage = (error: unknown) => {

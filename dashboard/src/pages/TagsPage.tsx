@@ -6,18 +6,40 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { Dialog } from '@/components/ui/dialog'
+import { useToast } from '@/components/ui/use-toast'
 import { formatDate } from '@/lib/utils'
+
+const getErrorMessage = (error: unknown) => {
+  if (typeof error === 'object' && error !== null && 'response' in error) {
+    const responseData = (error as { response?: { data?: unknown } }).response?.data
+    if (typeof responseData === 'string') return responseData
+    if (typeof responseData === 'object' && responseData !== null) {
+      const first = Object.values(responseData as Record<string, unknown>)[0]
+      if (Array.isArray(first) && first.length > 0) return String(first[0])
+    }
+  }
+  return 'Request failed. Check backend validation and permissions.'
+}
 
 export default function TagsPage() {
   const { data, isLoading } = useTags()
   const createTag = useCreateTag()
   const deleteTag = useDeleteTag()
+  const { toast } = useToast()
   const [newName, setNewName] = useState('')
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
 
   function handleCreate() {
     if (!newName.trim()) return
-    createTag.mutate(newName.trim(), { onSuccess: () => setNewName('') })
+    createTag.mutate(newName.trim(), {
+      onSuccess: () => {
+        setNewName('')
+        toast({ title: 'Tag created', description: 'Tag was created successfully.' })
+      },
+      onError: (e) => {
+        toast({ variant: 'destructive', title: 'Create failed', description: getErrorMessage(e) })
+      },
+    })
   }
 
   return (
@@ -85,7 +107,15 @@ export default function TagsPage() {
             <Button
               variant="destructive"
               loading={deleteTag.isPending}
-              onClick={() => deleteTag.mutate(confirmDelete!, { onSuccess: () => setConfirmDelete(null) })}
+              onClick={() => deleteTag.mutate(confirmDelete!, {
+                onSuccess: () => {
+                  setConfirmDelete(null)
+                  toast({ title: 'Tag deleted', description: 'Tag was removed successfully.' })
+                },
+                onError: (e) => {
+                  toast({ variant: 'destructive', title: 'Delete failed', description: getErrorMessage(e) })
+                },
+              })}
             >
               Delete
             </Button>

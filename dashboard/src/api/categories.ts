@@ -64,5 +64,12 @@ export async function updateCategory(id: string, payload: Partial<CreateCategory
 }
 
 export async function deleteCategory(id: string) {
-  await apiClient.delete(`/api/v1/categories/${id}/`)
+  const res = await apiClient.delete(`/api/v1/categories/${id}/`)
+  // Log status to help diagnose soft-delete vs hard-delete behaviour.
+  // 204 = hard delete (row removed). 200 with body = likely soft-delete (is_active set to false).
+  console.info(
+    `[deleteCategory] id=${id} status=${res.status}`,
+    res.data ?? '(no body)',
+  )
+  return res
 }

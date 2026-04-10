@@ -12,15 +12,29 @@ import { Dialog } from '@/components/ui/dialog'
 import { ActiveBadge } from '@/components/shared/StatusBadge'
 import { formatDate } from '@/lib/utils'
 import { queryKeys } from '@/lib/queryKeys'
+import { useToast } from '@/components/ui/use-toast'
 import { Eye, MousePointer, Pencil, Plus, Trash2 } from 'lucide-react'
 import type { Banner, BannerPlacement } from '@/types'
 
 const placements: BannerPlacement[] = ['HOME_TOP', 'HOME_MIDDLE', 'CATEGORY', 'SEARCH']
 
+const getErrorMessage = (error: unknown) => {
+  if (typeof error === 'object' && error !== null && 'response' in error) {
+    const responseData = (error as { response?: { data?: unknown } }).response?.data
+    if (typeof responseData === 'string') return responseData
+    if (typeof responseData === 'object' && responseData !== null) {
+      const first = Object.values(responseData as Record<string, unknown>)[0]
+      if (Array.isArray(first) && first.length > 0) return String(first[0])
+    }
+  }
+  return 'Request failed. Check backend validation and permissions.'
+}
+
 export default function BannersPage() {
   const { data, isLoading } = useBanners()
   const { createBanner, updateBanner, deleteBanner, isCreatingBanner, isUpdatingBanner, isDeletingBanner } = useBannerMutations()
   const qc = useQueryClient()
+  const { toast } = useToast()
 
   const verify = useMutation({ mutationFn: (id: string) => verifyBanner(id), onSuccess: () => void qc.invalidateQueries({ queryKey: queryKeys.banners.all }) })
   const unverify = useMutation({ mutationFn: (id: string) => unverifyBanner(id), onSuccess: () => void qc.invalidateQueries({ queryKey: queryKeys.banners.all }) })
@@ -58,37 +72,52 @@ export default function BannersPage() {
 
   const onCreate = async () => {
     if (!title.trim() || !image.trim()) return
-    await createBanner({
-      title: title.trim(),
-      image: image.trim(),
-      link_url: linkUrl.trim() || null,
-      placement,
-      is_active: isActive,
-    })
-    setShowCreate(false)
-    resetForm()
+    try {
+      await createBanner({
+        title: title.trim(),
+        image: image.trim(),
+        link_url: linkUrl.trim() || null,
+        placement,
+        is_active: isActive,
+      })
+      toast({ title: 'Banner created', description: 'Banner was created successfully.' })
+      setShowCreate(false)
+      resetForm()
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Create failed', description: getErrorMessage(e) })
+    }
   }
 
   const onUpdate = async () => {
     if (!editing || !title.trim()) return
-    await updateBanner({
-      id: editing.id,
-      data: {
-        title: title.trim(),
-        image: image.trim() || undefined,
-        link_url: linkUrl.trim() || null,
-        placement,
-        is_active: isActive,
-      },
-    })
-    setEditing(null)
-    resetForm()
+    try {
+      await updateBanner({
+        id: editing.id,
+        data: {
+          title: title.trim(),
+          image: image.trim() || undefined,
+          link_url: linkUrl.trim() || null,
+          placement,
+          is_active: isActive,
+        },
+      })
+      toast({ title: 'Banner updated', description: 'Changes were saved successfully.' })
+      setEditing(null)
+      resetForm()
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Update failed', description: getErrorMessage(e) })
+    }
   }
 
   const onDelete = async () => {
     if (!deleting) return
-    await deleteBanner(deleting.id)
-    setDeleting(null)
+    try {
+      await deleteBanner(deleting.id)
+      toast({ title: 'Banner deleted', description: 'Banner was removed successfully.' })
+      setDeleting(null)
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Delete failed', description: getErrorMessage(e) })
+    }
   }
 
   return (
