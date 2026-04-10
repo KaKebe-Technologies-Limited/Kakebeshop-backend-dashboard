@@ -16,6 +16,7 @@ import ConversationsPage from '@/pages/ConversationsPage'
 import UserRegistrationsPage from '@/pages/UserRegistrationsPage'
 import VisitorAnalyticsPage from '@/pages/VisitorAnalyticsPage'
 import ComingSoonPage from '@/pages/ComingSoonPage'
+import { AppShell } from '@/components/layout/AppShell'
 
 const router = createBrowserRouter([
   {
@@ -24,7 +25,11 @@ const router = createBrowserRouter([
   },
   {
     path: '/',
-    element: <ProtectedRoute><div /></ProtectedRoute>,
+    element: (
+      <ProtectedRoute>
+        <AppShell />
+      </ProtectedRoute>
+    ),
     children: [
       {
         index: true,
