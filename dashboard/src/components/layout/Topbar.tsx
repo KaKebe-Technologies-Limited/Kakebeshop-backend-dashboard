@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
 import { logout } from '@/api/auth'
 import { useUnreadCount } from '@/hooks/useReports'
+import { RealtimeIndicator } from '@/components/RealtimeProvider'
 import { Button } from '@/components/ui/button'
 
 interface TopbarProps { title: string }
@@ -26,14 +27,17 @@ export function Topbar({ title }: TopbarProps) {
 
       <div className="flex items-center gap-2">
         {isAuthenticated && (
-          <button className="relative rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
-            <Bell className="h-4 w-4" />
-            {unreadCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white">
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </button>
+          <>
+            <RealtimeIndicator />
+            <button className="relative rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
+              <Bell className="h-4 w-4" />
+              {unreadCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+          </>
         )}
 
         <div className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5">

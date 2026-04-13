@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
-import { logout } from '@/api/auth'
+import apiClient from '@/api/client'
 
 const TIMEOUT_MS = 30 * 60 * 1000 // 30 minutes
 
@@ -17,9 +17,13 @@ export function useInactivityLogout() {
       if (timer.current) clearTimeout(timer.current)
       timer.current = setTimeout(async () => {
         if (refresh) {
-          try { await logout(refresh) } catch { /* ignore */ }
+          try {
+            await apiClient.post('/auth/logout/', { refresh })
+          } catch {
+            // ignore — token may already be invalid
+          }
         }
-        storeLogout()
+        await storeLogout()
         navigate('/login?reason=timeout', { replace: true })
       }, TIMEOUT_MS)
     }
