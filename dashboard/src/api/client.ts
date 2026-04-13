@@ -66,14 +66,7 @@ apiClient.interceptors.response.use(
       try {
         const res = await axios.post<{ access: string }>(`${BASE_URL}/auth/token/refresh/`, { refresh })
         const newAccess = res.data.access
-        useAuthStore.getState().login(
-          { access: newAccess, refresh },
-          {
-            userId: useAuthStore.getState().userId ?? '',
-            name: useAuthStore.getState().name ?? '',
-            username: useAuthStore.getState().username ?? '',
-          },
-        )
+        useAuthStore.getState().setAccess(newAccess)
         originalRequest.headers.Authorization = `Bearer ${newAccess}`
         processQueue(null, newAccess)
         return apiClient(originalRequest)

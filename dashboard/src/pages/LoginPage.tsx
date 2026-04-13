@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { login as adminLogin } from '@/api/auth'
+import { adminLogin } from '@/api/adminAuth'
 import { useAuthStore, type UserRole } from '@/stores/authStore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -42,7 +42,7 @@ export default function LoginPage() {
     try {
       const result = await adminLogin(data)
       storeLogin(result.tokens, {
-        userId: result.user.userId,
+        userId: result.user.id,
         name: result.user.name,
         username: result.user.username,
         role: result.user.role as UserRole | undefined,
