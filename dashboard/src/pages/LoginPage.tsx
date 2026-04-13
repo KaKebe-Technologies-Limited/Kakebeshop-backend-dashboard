@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { adminLogin } from '@/api/adminAuth'
+import { login } from '@/api/auth'
 import { useAuthStore, type UserRole } from '@/stores/authStore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -40,16 +40,17 @@ export default function LoginPage() {
     }
     setError(null)
     try {
-      const result = await adminLogin(data)
+      const result = await login(data)
       storeLogin(result.tokens, {
-        userId: result.user.id,
+        userId: result.user.userId,
         name: result.user.name,
         username: result.user.username,
         role: result.user.role as UserRole | undefined,
       })
       setFailCount(0)
       navigate(isSafeRedirect(params.get('next')), { replace: true })
-    } catch {
+    } catch (err: unknown) {
+      console.error('[Login] Error:', err)
       const next = failCount + 1
       setFailCount(next)
       if (next >= MAX_ATTEMPTS) {
@@ -57,7 +58,19 @@ export default function LoginPage() {
         setFailCount(0)
         setError('Too many failed attempts. Please wait 30 seconds before trying again.')
       } else {
-        setError('Invalid email or password. Please try again.')
+        // Show server error message if available
+        const axiosErr = err as { response?: { data?: { detail?: string; message?: string; non_field_errors?: string[] } }; message?: string }
+        const serverMsg =
+          axiosErr?.response?.data?.detail ||
+          axiosErr?.response?.data?.message ||
+          axiosErr?.response?.data?.non_field_errors?.[0]
+        if (serverMsg) {
+          setError(serverMsg)
+        } else if (axiosErr?.message?.toLowerCase().includes('network')) {
+          setError('Network error — unable to reach the server. Check your connection.')
+        } else {
+          setError('Invalid email or password. Please try again.')
+        }
       }
     }
   }
