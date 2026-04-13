@@ -6,12 +6,21 @@ interface LoginResponse {
   name: string
   username: string
   user_id: string
+  role?: string
   tokens: { access: string; refresh: string }
 }
 
 export async function login(payload: LoginPayload) {
   const res = await apiClient.post<LoginResponse>('/auth/login/', payload)
-  return { tokens: res.data.tokens, user: { userId: res.data.user_id, name: res.data.name, username: res.data.username } }
+  return {
+    tokens: res.data.tokens,
+    user: {
+      userId: res.data.user_id,
+      name: res.data.name,
+      username: res.data.username,
+      role: res.data.role,
+    },
+  }
 }
 
 export async function logout(refresh: string) {

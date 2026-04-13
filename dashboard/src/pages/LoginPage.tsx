@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { login as adminLogin } from '@/api/auth'
-import { useAuthStore } from '@/stores/authStore'
+import { useAuthStore, type UserRole } from '@/stores/authStore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AlertCircle, Eye, EyeOff } from 'lucide-react'
@@ -45,6 +45,7 @@ export default function LoginPage() {
         userId: result.user.userId,
         name: result.user.name,
         username: result.user.username,
+        role: result.user.role as UserRole | undefined,
       })
       setFailCount(0)
       navigate(isSafeRedirect(params.get('next')), { replace: true })
