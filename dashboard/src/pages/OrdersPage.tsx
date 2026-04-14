@@ -135,7 +135,7 @@ export default function OrdersPage() {
         {data && (
           <div className="flex items-center gap-2">
             <Badge variant="secondary" className="text-sm">
-              {data.count} total
+              {(data?.count ?? 0)} total
             </Badge>
             {(data.results ?? []).filter(o => o.status === 'NEW').length > 0 && (
               <Badge variant="warning" className="text-sm">

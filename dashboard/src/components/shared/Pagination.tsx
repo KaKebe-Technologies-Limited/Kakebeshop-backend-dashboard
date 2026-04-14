@@ -9,7 +9,7 @@ interface PaginationProps {
   onPage: (p: number) => void
 }
 
-export function Pagination({ page, totalPages, count, pageSize = 20, onPage }: PaginationProps) {
+export function Pagination({ page, totalPages = 1, count = 0, pageSize = 20, onPage }: PaginationProps) {
   const from = Math.min((page - 1) * pageSize + 1, count)
   const to = Math.min(page * pageSize, count)
 

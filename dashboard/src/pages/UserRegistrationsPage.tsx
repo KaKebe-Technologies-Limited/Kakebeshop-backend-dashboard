@@ -178,7 +178,7 @@ export default function UserRegistrationsPage() {
         {data && (
           <div className="flex items-center gap-2">
             <Badge variant="secondary" className="text-sm">
-              {data.count} total
+              {(data?.count ?? 0)} total
             </Badge>
             {pendingCount > 0 && (
               <Badge variant="warning" className="text-sm">
