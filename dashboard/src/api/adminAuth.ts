@@ -10,10 +10,13 @@ interface AdminUser {
 
 interface AdminLoginResponse {
   user: AdminUser
-  tokens: {
+  // Some backends nest tokens, others return them flat
+  tokens?: {
     access: string
     refresh: string
   }
+  access?: string
+  refresh?: string
 }
 
 export async function adminLogin(credentials: { email: string; password: string }): Promise<AdminLoginResponse> {

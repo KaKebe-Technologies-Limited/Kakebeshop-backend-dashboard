@@ -11,6 +11,11 @@ export default defineConfig({
   },
   server: {
     proxy: {
+      '/admin': {
+        target: 'https://backend.kakebeshop.com',
+        changeOrigin: true,
+        secure: true,
+      },
       '/api': {
         target: 'https://backend.kakebeshop.com',
         changeOrigin: true,

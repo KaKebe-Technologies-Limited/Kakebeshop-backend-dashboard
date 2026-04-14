@@ -73,13 +73,13 @@ export const useAuthStore = create<AuthState>()(
       userId: null,
       name: null,
       username: null,
-      role: 'viewer',
+      role: 'admin',
       permissions: [],
       isAuthenticated: false,
       hasHydrated: false,
 
       login: (tokens, user) => {
-        const role = user.role ?? 'viewer'
+        const role = user.role ?? 'admin' // Default to admin if backend doesn't specify
         const permissions = user.permissions ?? ROLE_PERMISSIONS[role]
         set({
           access: tokens.access,
@@ -100,7 +100,7 @@ export const useAuthStore = create<AuthState>()(
           userId: null,
           name: null,
           username: null,
-          role: 'viewer',
+          role: 'admin',
           permissions: [],
           isAuthenticated: false,
         })
