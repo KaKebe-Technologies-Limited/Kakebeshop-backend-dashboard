@@ -74,12 +74,12 @@ export default function OrdersPage() {
   }
 
   const toggleSelectAll = () => {
-    if (!data?.results.length) return
-    
-    if (selectedIds.size === data.results.length) {
+    if (!data?.results?.length) return
+
+    if (selectedIds.size === (data.results ?? []).length) {
       setSelectedIds(new Set())
     } else {
-      setSelectedIds(new Set(data.results.map(o => o.id)))
+      setSelectedIds(new Set((data.results ?? []).map(o => o.id)))
     }
   }
 
@@ -137,9 +137,9 @@ export default function OrdersPage() {
             <Badge variant="secondary" className="text-sm">
               {data.count} total
             </Badge>
-            {data.results.filter(o => o.status === 'NEW').length > 0 && (
+            {(data.results ?? []).filter(o => o.status === 'NEW').length > 0 && (
               <Badge variant="warning" className="text-sm">
-                {data.results.filter(o => o.status === 'NEW').length} new
+                {(data.results ?? []).filter(o => o.status === 'NEW').length} new
               </Badge>
             )}
             <Button variant="outline" size="sm" onClick={handleExport}>
@@ -241,7 +241,7 @@ export default function OrdersPage() {
               <TableHead className="w-12">
                 {canBulkUpdate && (
                   <button onClick={toggleSelectAll} className="hover:opacity-70">
-                    {data && selectedIds.size === data.results.length && selectedIds.size > 0
+                    {data && selectedIds.size === (data.results ?? []).length && selectedIds.size > 0
                       ? <CheckSquare className="h-4 w-4" />
                       : <Square className="h-4 w-4" />
                     }
@@ -265,7 +265,7 @@ export default function OrdersPage() {
               {!data?.results.length ? (
                 <TableEmpty colSpan={9} message="No orders found. Orders will appear here once created." />
               ) : (
-                data.results.map((o: Order) => (
+                (data.results ?? []).map((o: Order) => (
                   <TableRow
                     key={o.id}
                     className="cursor-pointer hover:bg-muted/50 transition-colors"

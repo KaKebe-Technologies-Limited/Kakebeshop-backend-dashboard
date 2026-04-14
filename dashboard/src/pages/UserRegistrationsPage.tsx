@@ -96,7 +96,7 @@ export default function UserRegistrationsPage() {
   const handleApprove = async (id: string) => {
     try {
       await apiClient.post(`/admin/registrations/${id}/approve`)
-      const approved = data?.results.find(r => r.id === id)
+      const approved = data?.results?.find(r => r.id === id)
       if (approved) {
         // Send multi-channel notification
         void notificationService.notifyRegistrationApproved({
@@ -139,7 +139,7 @@ export default function UserRegistrationsPage() {
   const toggleSelectAll = () => {
     if (!data?.results.length) return
     
-    const pendingIds = data.results
+    const pendingIds = (data?.results ?? [])
       .filter(r => r.status === 'pending')
       .map(r => r.id)
     
@@ -160,8 +160,8 @@ export default function UserRegistrationsPage() {
     }
   }
 
-  const selectedReg = data?.results.find(r => r.id === selectedId)
-  const pendingCount = data?.results.filter(r => r.status === 'pending').length ?? 0
+  const selectedReg = data?.results?.find(r => r.id === selectedId)
+  const pendingCount = data?.results?.filter(r => r.status === 'pending').length ?? 0
   const canBulkAction = hasPermission('manage_registrations') && selectedIds.size > 0
 
   return (
@@ -277,7 +277,7 @@ export default function UserRegistrationsPage() {
               <TableHead className="w-12">
                 {canBulkAction && status !== 'approved' && status !== 'rejected' && (
                   <button onClick={toggleSelectAll} className="hover:opacity-70">
-                    {data && selectedIds.size === data.results.filter(r => r.status === 'pending').length && selectedIds.size > 0
+                    {data && selectedIds.size === (data.results ?? []).filter(r => r.status === 'pending').length && selectedIds.size > 0
                       ? <CheckSquare className="h-4 w-4" />
                       : <Square className="h-4 w-4" />
                     }

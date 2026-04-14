@@ -85,7 +85,7 @@ export default function RoleManagementPage() {
     },
   })
 
-  const selectedUser = data?.results.find(u => u.id === selectedUserId)
+  const selectedUser = data?.results?.find(u => u.id === selectedUserId)
 
   return (
     <RoleGuard requiredPermission="manage_roles">
@@ -133,7 +133,7 @@ export default function RoleManagementPage() {
                 {!data?.results.length ? (
                   <TableEmpty colSpan={6} message="No users found." />
                 ) : (
-                  data.results.map((user) => (
+                  (data.results ?? []).map((user) => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">{user.name}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{user.email}</TableCell>
