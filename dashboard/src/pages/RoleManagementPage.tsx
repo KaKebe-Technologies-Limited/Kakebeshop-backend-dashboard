@@ -130,7 +130,7 @@ export default function RoleManagementPage() {
               <TableSkeleton rows={8} cols={6} />
             ) : (
               <TableBody>
-                {!data?.results.length ? (
+                {!(data?.results?.length) ? (
                   <TableEmpty colSpan={6} message="No users found." />
                 ) : (
                   (data.results ?? []).map((user) => (

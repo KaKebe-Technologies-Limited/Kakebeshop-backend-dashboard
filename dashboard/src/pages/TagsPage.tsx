@@ -78,10 +78,10 @@ export default function TagsPage() {
                   ))}
                 </TableRow>
               ))
-            ) : !data?.results.length ? (
+            ) : !(data?.results?.length) ? (
               <TableEmpty colSpan={4} message="No tags yet." />
             ) : (
-              data.results.map(tag => (
+              (data.results ?? []).map(tag => (
                 <TableRow key={tag.id}>
                   <TableCell className="font-medium">{tag.name}</TableCell>
                   <TableCell className="text-muted-foreground text-xs font-mono">{tag.slug}</TableCell>

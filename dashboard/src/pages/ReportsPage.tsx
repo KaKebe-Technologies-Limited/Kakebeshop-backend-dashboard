@@ -92,10 +92,10 @@ export default function ReportsPage() {
             <TableSkeleton rows={8} cols={5} />
           ) : (
             <TableBody>
-              {!data?.results.length ? (
+              {!(data?.results?.length) ? (
                 <TableEmpty colSpan={5} message="No reports found." />
               ) : (
-                data.results.map((r: Report) => (
+                (data.results ?? []).map((r: Report) => (
                   <TableRow key={r.id}>
                     <TableCell>
                       <Badge variant={reasonVariant[r.reason] ?? 'muted'}>{reasonLabels[r.reason] ?? r.reason}</Badge>

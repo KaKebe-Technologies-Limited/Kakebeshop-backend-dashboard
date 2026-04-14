@@ -80,10 +80,10 @@ export default function MerchantsPage() {
             <TableSkeleton rows={8} cols={7} />
           ) : (
             <TableBody>
-              {!data?.results.length ? (
+              {!(data?.results?.length) ? (
                 <TableEmpty colSpan={7} />
               ) : (
-                data.results.map((m: MerchantListItem) => (
+                (data.results ?? []).map((m: MerchantListItem) => (
                   <TableRow key={m.id} className="cursor-pointer" onClick={() => setSelectedId(m.id)}>
                     <TableCell>
                       <MerchantAvatar logo={m.logo} name={m.display_name} size="sm" />

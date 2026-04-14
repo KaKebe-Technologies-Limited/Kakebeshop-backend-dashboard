@@ -262,7 +262,7 @@ export default function OrdersPage() {
             <TableSkeleton rows={8} cols={9} />
           ) : (
             <TableBody>
-              {!data?.results.length ? (
+              {!(data?.results?.length) ? (
                 <TableEmpty colSpan={9} message="No orders found. Orders will appear here once created." />
               ) : (
                 (data.results ?? []).map((o: Order) => (

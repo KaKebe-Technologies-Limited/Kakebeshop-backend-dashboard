@@ -83,10 +83,10 @@ export default function TransactionsPage() {
             <TableSkeleton rows={8} cols={7} />
           ) : (
             <TableBody>
-              {!data?.results.length ? (
+              {!(data?.results?.length) ? (
                 <TableEmpty colSpan={7} message="No transactions found." />
               ) : (
-                data.results.map((t: Transaction) => (
+                (data.results ?? []).map((t: Transaction) => (
                   <TableRow key={t.id}>
                     <TableCell className="font-mono text-xs">{t.transaction_number}</TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground">{t.order_number}</TableCell>

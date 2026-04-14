@@ -38,10 +38,10 @@ export default function AuditLogsPage() {
           <TableSkeleton rows={10} cols={4} />
         ) : (
           <TableBody>
-            {!data?.results.length ? (
+            {!(data?.results?.length) ? (
               <TableEmpty colSpan={4} message="No audit logs found." />
             ) : (
-              data.results.map((log: AuditLog) => (
+              (data.results ?? []).map((log: AuditLog) => (
                 <TableRow key={log.id}>
                   <TableCell className="font-medium text-sm">{log.action}</TableCell>
                   <TableCell><Badge variant="secondary">{log.entity_type}</Badge></TableCell>

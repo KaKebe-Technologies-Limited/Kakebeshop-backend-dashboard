@@ -137,7 +137,7 @@ export default function UserRegistrationsPage() {
   }
 
   const toggleSelectAll = () => {
-    if (!data?.results.length) return
+    if (!(data?.results?.length)) return
     
     const pendingIds = (data?.results ?? [])
       .filter(r => r.status === 'pending')
@@ -296,10 +296,10 @@ export default function UserRegistrationsPage() {
             <TableSkeleton rows={8} cols={7} />
           ) : (
             <TableBody>
-              {!data?.results.length ? (
+              {!(data?.results?.length) ? (
                 <TableEmpty colSpan={7} message="No registrations found. Try adjusting your filters." />
               ) : (
-                data.results.map((r) => (
+                (data.results ?? []).map((r) => (
                   <TableRow key={r.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
                     <TableCell>
                       {canBulkAction && r.status === 'pending' && (

@@ -185,10 +185,10 @@ export default function ListingsPage() {
             <TableSkeleton rows={10} cols={10} />
           ) : (
             <TableBody>
-              {!data?.results.length ? (
+              {!(data?.results?.length) ? (
                 <TableEmpty colSpan={10} />
               ) : (
-                data.results.map((l: Listing) => (
+                (data.results ?? []).map((l: Listing) => (
                   <TableRow key={l.id}>
                     <TableCell>
                       {l.primary_image ? (

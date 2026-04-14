@@ -247,13 +247,13 @@ export default function ConversationsPage() {
                 <div className="h-3 w-40 rounded shimmer" />
               </div>
             ))
-          ) : !data?.results.length ? (
+          ) : !(data?.results?.length) ? (
             <div className="flex flex-col items-center justify-center h-40 gap-2 text-muted-foreground">
               <MessageSquare className="h-7 w-7 opacity-30" />
               <p className="text-xs">No conversations found</p>
             </div>
           ) : (
-            data.results.map(conv => (
+            (data.results ?? []).map(conv => (
               <ConvItem
                 key={conv.id}
                 conv={conv}
