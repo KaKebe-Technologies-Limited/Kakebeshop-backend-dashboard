@@ -7,7 +7,6 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { dashboardRoutes } from '@/router'
-import { useAuthStore } from '@/stores/authStore'
 
 // Map route paths to icons (overrides icon string from route config)
 const iconMap: Record<string, React.ElementType> = {
@@ -53,18 +52,12 @@ interface SidebarProps {
 }
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
-  const role = useAuthStore(s => s.role)
-  const hasPermissionFn = useAuthStore(s => s.hasPermission)
+  // TODO: Re-enable role-based sidebar filtering when permissions system is ready
+  // For now, show all tabs for any authenticated user
+  const availablePaths = new Set(dashboardRoutes.map(r => r.path))
 
-  // Build a set of available route paths for the current role
-  const availablePaths = new Set(
-    dashboardRoutes
-      .filter(r => r.roles?.includes(role))
-      .map(r => r.path)
-  )
-
-  // Check if role-management should be shown
-  const showRoleManagement = hasPermissionFn('manage_roles')
+  // Check if role-management should be shown (always show for now)
+  const showRoleManagement = true
 
   return (
     <aside
