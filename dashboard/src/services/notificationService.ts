@@ -200,8 +200,8 @@ class NotificationService {
   }
 
   private async sendNtfy(payload: NotificationPayload): Promise<NotificationResult> {
-    const NTFY_URL = 'https://ntfy.sh'
-    const NTFY_TOPIC = 'kakebe-notifications'
+    const NTFY_URL = import.meta.env.VITE_NTFY_URL || 'https://ntfy.sh'
+    const NTFY_TOPIC = import.meta.env.VITE_NTFY_TOPIC || 'kakebe-notifications'
 
     try {
       await fetch(`${NTFY_URL}/${NTFY_TOPIC}`, {
