@@ -211,7 +211,7 @@ export default function ListingsPage() {
                     <TableCell className="text-xs font-medium">
                       {formatPriceRange(l.price_type, l.price, l.price_min, l.price_max)}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{l.views_count.toLocaleString()}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{(l.views_count ?? 0).toLocaleString()}</TableCell>
                     <TableCell>
                       <div className="flex gap-1 flex-wrap">
                         {l.is_verified && <Badge variant="success">Verified</Badge>}

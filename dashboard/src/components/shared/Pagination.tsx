@@ -10,13 +10,14 @@ interface PaginationProps {
 }
 
 export function Pagination({ page, totalPages = 1, count = 0, pageSize = 20, onPage }: PaginationProps) {
-  const from = Math.min((page - 1) * pageSize + 1, count)
-  const to = Math.min(page * pageSize, count)
+  const safeCount = count ?? 0
+  const from = Math.min((page - 1) * pageSize + 1, safeCount)
+  const to = Math.min(page * pageSize, safeCount)
 
   return (
     <div className="flex items-center justify-between px-4 py-3 border-t border-border">
       <p className="text-sm text-muted-foreground">
-        {count === 0 ? 'No results' : `${from}–${to} of ${count.toLocaleString()}`}
+        {safeCount === 0 ? 'No results' : `${from}–${to} of ${safeCount.toLocaleString()}`}
       </p>
       <div className="flex items-center gap-1">
         <Button variant="outline" size="icon" onClick={() => onPage(page - 1)} disabled={page <= 1}>
