@@ -1,7 +1,7 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '@/stores/authStore'
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://backend.kakebeshop.com'
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
