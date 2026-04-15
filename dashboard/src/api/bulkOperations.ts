@@ -13,12 +13,12 @@ export async function bulkRejectRegistrations(ids: string[], reason?: string): P
 
 // Order bulk operations
 export async function bulkUpdateOrderStatus(ids: string[], status: string): Promise<{ count: number }> {
-  const response = await apiClient.post('/orders/bulk-update-status', { ids, status })
+  const response = await apiClient.post('/api/v1/orders/bulk-update-status/', { ids, status })
   return response.data
 }
 
 export async function bulkExportOrders(filters: Record<string, any>): Promise<Blob> {
-  const response = await apiClient.post('/orders/export', filters, {
+  const response = await apiClient.post('/api/v1/orders/export/', filters, {
     responseType: 'blob'
   })
   return response.data

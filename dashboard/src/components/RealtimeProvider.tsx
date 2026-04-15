@@ -39,7 +39,7 @@ export function RealtimeProvider({ children }: RealtimeProviderProps) {
     const unsubscribeOrderStatus = websocketService.on('order_status_changed', (data) => {
       console.log('Order status changed:', data)
       queryClient.invalidateQueries({ queryKey: ['orders'] })
-      queryClient.invalidateQueries({ queryKey: ['order', data.id] })
+      queryClient.invalidateQueries({ queryKey: ['orders', data.id] })
     })
 
     // Listen for new registrations
