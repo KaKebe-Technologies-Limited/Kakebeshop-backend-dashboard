@@ -1,5 +1,5 @@
 const NTFY_URL = import.meta.env.VITE_NTFY_URL || 'https://ntfy.sh'
-const NTFY_TOPIC = import.meta.env.VITE_NTFY_TOPIC || 'kakebe-notifications'
+const NTFY_TOPIC = import.meta.env.VITE_NTFY_TOPIC || 'Kakebe-Shop-orders'
 
 interface NotifyOptions {
   title?: string
