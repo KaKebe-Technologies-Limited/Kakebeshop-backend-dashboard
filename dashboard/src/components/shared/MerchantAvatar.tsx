@@ -23,17 +23,18 @@ const colors = [
 ]
 
 function hashName(name: string) {
-  return name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
+  return (name ?? '').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
 }
 
 export function MerchantAvatar({ logo, name, size = 'md', className }: MerchantAvatarProps) {
-  const color = colors[hashName(name) % colors.length]
+  const safeName = name ?? ''
+  const color = colors[hashName(safeName) % colors.length]
 
   if (logo) {
     return (
       <img
         src={logo}
-        alt={name}
+        alt={safeName}
         className={cn('rounded-full object-cover flex-shrink-0', sizeMap[size], className)}
         onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
       />
@@ -42,7 +43,7 @@ export function MerchantAvatar({ logo, name, size = 'md', className }: MerchantA
 
   return (
     <div className={cn('rounded-full flex items-center justify-center font-semibold flex-shrink-0', sizeMap[size], color, className)}>
-      {getInitials(name)}
+      {getInitials(safeName)}
     </div>
   )
 }

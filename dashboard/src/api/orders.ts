@@ -37,7 +37,7 @@ function normalizeOrderList(raw: BackendOrderListResponse): PaginatedResponse<Or
     current_page: raw.current_page,
     next: raw.next ?? null,
     previous: raw.previous ?? null,
-    results: raw.data ?? [],
+    results: (raw as any).results ?? raw.data ?? [],
   }
 }
 
