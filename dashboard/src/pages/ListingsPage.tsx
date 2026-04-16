@@ -47,10 +47,10 @@ export default function ListingsPage() {
 
   const { data, isLoading } = useListings({
     page,
-    search: search || undefined,
+    q: search || undefined,
     listing_type: type as 'PRODUCT' | 'SERVICE' | '',
-    is_featured: featured === 'true' ? true : '',
-    category: category || undefined,
+    is_verified: featured === 'true' ? true : '',
+    category_id: category || undefined,
     ordering: '-created_at',
   })
 

@@ -19,7 +19,7 @@ export default function OverviewPage() {
       { queryKey: ['overview', 'listings-services'], queryFn: () => fetchListings({ listing_type: 'SERVICE' }), staleTime: 60_000 },
       { queryKey: ['overview', 'merchants-all'], queryFn: () => fetchMerchants({ page: 1 }), staleTime: 60_000 },
       { queryKey: ['overview', 'merchants-verified'], queryFn: () => fetchMerchants({ verified: true }), staleTime: 60_000 },
-      { queryKey: ['overview', 'merchants-featured'], queryFn: () => fetchMerchants({ featured: true }), staleTime: 60_000 },
+      { queryKey: ['overview', 'merchants-featured'], queryFn: () => fetchMerchants({ status: 'ACTIVE' }), staleTime: 60_000 },
       { queryKey: ['overview', 'categories'], queryFn: () => fetchCategories({ page: 1 }), staleTime: 60_000 },
       { queryKey: ['overview', 'tags'], queryFn: () => fetchTags(), staleTime: 60_000 },
     ],

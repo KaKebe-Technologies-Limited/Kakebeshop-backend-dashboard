@@ -120,7 +120,7 @@ export function OrderDetailDialog({ orderId, open, onClose }: OrderDetailDialogP
                   </tr>
                 </thead>
                 <tbody>
-                  {order.items.map((item) => (
+                  {order.items.map((item: import('@/types').OrderIntentItem) => (
                     <tr key={item.id} className="border-t border-border">
                       <td className="px-4 py-2 text-sm">{item.listing_title}</td>
                       <td className="px-4 py-2 text-sm text-right">{item.quantity}</td>

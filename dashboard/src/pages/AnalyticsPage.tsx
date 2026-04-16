@@ -17,7 +17,7 @@ export default function AnalyticsPage() {
       { queryKey: ['analytics', 'services'], queryFn: () => fetchListings({ listing_type: 'SERVICE' }), staleTime: 120_000 },
       { queryKey: ['analytics', 'merchants-verified'], queryFn: () => fetchMerchants({ verified: true }), staleTime: 120_000 },
       { queryKey: ['analytics', 'merchants-all'], queryFn: () => fetchMerchants({ page: 1 }), staleTime: 120_000 },
-      { queryKey: ['analytics', 'featured-listings'], queryFn: () => fetchListings({ is_featured: true }), staleTime: 120_000 },
+      { queryKey: ['analytics', 'featured-listings'], queryFn: () => fetchListings({ is_verified: true }), staleTime: 120_000 },
     ],
   })
 

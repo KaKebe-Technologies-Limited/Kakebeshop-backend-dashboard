@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { fetchCategories, fetchCategoryTree, createCategory, updateCategory, deleteCategory, type CategoryFilters } from '@/api/categories'
+import { fetchCategories, createCategory, updateCategory, deleteCategory, type CategoryFilters } from '@/api/categories'
 import { queryKeys } from '@/lib/queryKeys'
 
 export function useCategories(filters: CategoryFilters = {}) {
@@ -8,14 +8,6 @@ export function useCategories(filters: CategoryFilters = {}) {
     queryFn: () => fetchCategories(filters),
     placeholderData: prev => prev,
     staleTime: 60_000,
-  })
-}
-
-export function useCategoryTree() {
-  return useQuery({
-    queryKey: queryKeys.categories.tree,
-    queryFn: fetchCategoryTree,
-    staleTime: 10 * 60_000,
   })
 }
 

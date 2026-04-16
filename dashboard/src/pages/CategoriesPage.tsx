@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useCategoryTree, useCategoryMutations } from '@/hooks/useCategories'
+import { useCategories, useCategoryMutations } from '@/hooks/useCategories'
 import { ChevronRight, ChevronDown, FolderOpen, Folder, Plus, Pencil, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -72,7 +72,7 @@ function filterActiveNodes(nodes: CategoryTreeNode[]): CategoryTreeNode[] {
 }
 
 export default function CategoriesPage() {
-  const { data: tree, isLoading, refetch } = useCategoryTree()
+  const { data: catData, isLoading, refetch } = useCategories({ page: 1 })
   const { createCategory, updateCategory, deleteCategory } = useCategoryMutations()
   const { toast } = useToast()
 
@@ -88,9 +88,17 @@ export default function CategoriesPage() {
   const [editCategoryName, setEditCategoryName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const rawTreeNodes = (tree as unknown as CategoryTreeNode[] ?? [])
-  // Filter out soft-deleted nodes (is_active=false) - backend may soft-delete
-  // rather than physically remove records, keeping them in the queryset.
+  const rawTreeNodes = useMemo(() => {
+    const flat = catData?.results ?? []
+    const map = new Map<string, CategoryTreeNode>()
+    flat.forEach(c => map.set(c.id, { ...c, children: [] }))
+    const roots: CategoryTreeNode[] = []
+    map.forEach(node => {
+      if (node.parent) map.get(node.parent)?.children.push(node)
+      else roots.push(node)
+    })
+    return roots
+  }, [catData])
   const treeNodes = useMemo(() => filterActiveNodes(rawTreeNodes), [rawTreeNodes])
   const flatCategories = useMemo(() => flattenTree(treeNodes), [treeNodes])
 
