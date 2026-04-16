@@ -14,6 +14,15 @@ export function MerchantStatusBadge({ verified, featured }: { verified: boolean;
   )
 }
 
+export function MerchantAccountStatusBadge({ status }: { status: 'ACTIVE' | 'SUSPENDED' | 'BANNED' }) {
+  const map = {
+    ACTIVE: <Badge variant="success">Active</Badge>,
+    SUSPENDED: <Badge variant="warning">Suspended</Badge>,
+    BANNED: <Badge variant="destructive">Banned</Badge>,
+  }
+  return map[status] ?? <Badge variant="muted">{status}</Badge>
+}
+
 export function ListingTypeBadge({ type }: { type: 'PRODUCT' | 'SERVICE' }) {
   return type === 'PRODUCT'
     ? <Badge variant="info">Product</Badge>

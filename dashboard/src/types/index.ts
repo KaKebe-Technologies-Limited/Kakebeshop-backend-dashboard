@@ -86,29 +86,30 @@ export interface MerchantLocation {
 // ─── Merchant ────────────────────────────────────────────────────────────────
 export interface MerchantListItem {
   id: string
+  user_id: string
+  user_name: string
+  user_email: string
   display_name: string
   business_name: string | null
   logo: string | null
+  cover_image: string | null
   rating: number
   total_reviews: number
   verified: boolean
+  verification_date: string | null
   featured: boolean
+  featured_order: number
+  status: 'ACTIVE' | 'SUSPENDED' | 'BANNED'
+  created_at: string
+  updated_at: string
 }
 
 export interface MerchantDetail extends MerchantListItem {
-  user_id: string
-  username: string
-  email: string
   description: string | null
   business_phone: string | null
   location: MerchantLocation | null
   business_email: string | null
-  cover_image: string | null
-  verification_date: string | null
-  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED'
   is_active: boolean
-  created_at: string
-  updated_at: string
 }
 
 // ─── Listing ─────────────────────────────────────────────────────────────────
@@ -167,10 +168,14 @@ export interface Order {
   order_number: string
   buyer: string
   buyer_name: string
+  buyer_email: string
+  buyer_phone: string | null
   merchant: string
   merchant_name: string
   address: UserAddress | null
   notes: string | null
+  cancellation_reason: string | null
+  cancelled_by: string | null
   total_amount: string
   delivery_fee: string | null
   expected_delivery_date: string | null

@@ -3,27 +3,23 @@ import type { Category, PaginatedResponse } from '@/types'
 
 export interface CategoryFilters {
   page?: number
-  search?: string
+  q?: string
   is_featured?: boolean
   is_active?: boolean
-  parent?: string | null
+  parent_only?: boolean
   ordering?: string
 }
 
 export async function fetchCategories(filters: CategoryFilters = {}) {
-  const params: Record<string, unknown> = { ...filters }
-  if (params.parent === null) params.parent = 'null'
-  const res = await apiClient.get<PaginatedResponse<Category>>('/api/v1/categories/', { params })
-  return res.data
-}
-
-export async function fetchCategoryTree() {
-  const res = await apiClient.get<Category[]>('/api/v1/categories/tree/')
+  const params = Object.fromEntries(
+    Object.entries(filters).filter(([, v]) => v !== undefined)
+  )
+  const res = await apiClient.get<PaginatedResponse<Category>>('/api/v1/admin/categories/', { params })
   return res.data
 }
 
 export async function fetchCategoryById(id: string) {
-  const res = await apiClient.get<Category>(`/api/v1/categories/${id}/`)
+  const res = await apiClient.get<Category>(`/api/v1/admin/categories/${id}/`)
   return res.data
 }
 
@@ -54,22 +50,21 @@ export interface CreateCategoryPayload {
 }
 
 export async function createCategory(payload: CreateCategoryPayload) {
-  const res = await apiClient.post<Category>('/api/v1/categories/', payload)
+  const res = await apiClient.post<Category>('/api/v1/admin/categories/', payload)
   return res.data
 }
 
 export async function updateCategory(id: string, payload: Partial<CreateCategoryPayload>) {
-  const res = await apiClient.patch<Category>(`/api/v1/categories/${id}/`, payload)
+  const res = await apiClient.patch<Category>(`/api/v1/admin/categories/${id}/`, payload)
   return res.data
 }
 
 export async function deleteCategory(id: string) {
-  const res = await apiClient.delete(`/api/v1/categories/${id}/`)
-  // Log status to help diagnose soft-delete vs hard-delete behaviour.
-  // 204 = hard delete (row removed). 200 with body = likely soft-delete (is_active set to false).
-  console.info(
-    `[deleteCategory] id=${id} status=${res.status}`,
-    res.data ?? '(no body)',
-  )
+  const res = await apiClient.delete(`/api/v1/admin/categories/${id}/`)
   return res
+}
+
+export async function toggleCategoryActive(id: string) {
+  const res = await apiClient.post(`/api/v1/admin/categories/${id}/toggle-active/`)
+  return res.data
 }
