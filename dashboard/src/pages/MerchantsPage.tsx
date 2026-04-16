@@ -47,6 +47,7 @@ export default function MerchantsPage() {
     q: q || undefined,
     verified: verified === 'true' ? true : verified === 'false' ? false : '',
     status: (status as 'ACTIVE' | 'SUSPENDED' | 'BANNED') || undefined,
+    ordering: '-created_at',
   })
 
   const { data: detail, isLoading: detailLoading } = useMerchantDetail(selectedId)
