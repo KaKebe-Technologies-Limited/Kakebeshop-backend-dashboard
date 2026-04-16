@@ -124,9 +124,11 @@ export interface ListingImage {
 
 export interface Listing {
   id: string
-  merchant: MerchantListItem
+  merchant_id: string
+  merchant_name: string
   title: string
   listing_type: 'PRODUCT' | 'SERVICE'
+  category: string
   category_name: string
   price_type: 'FIXED' | 'RANGE'
   price: string | null
@@ -135,9 +137,12 @@ export interface Listing {
   currency: string
   is_featured: boolean
   is_verified: boolean
+  status: string
   views_count: number
+  contact_count: number
   primary_image: ListingImage | null
   created_at: string
+  updated_at: string
 }
 
 // ─── Order ───────────────────────────────────────────────────────────────────

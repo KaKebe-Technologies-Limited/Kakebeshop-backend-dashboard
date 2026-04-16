@@ -10,7 +10,6 @@ import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { ListingTypeBadge } from '@/components/shared/StatusBadge'
-import { MerchantAvatar } from '@/components/shared/MerchantAvatar'
 import { Badge } from '@/components/ui/badge'
 import { formatPriceRange, formatDate } from '@/lib/utils'
 import { Dialog } from '@/components/ui/dialog'
@@ -202,8 +201,7 @@ export default function ListingsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <MerchantAvatar logo={l.merchant.logo} name={l.merchant.display_name} size="sm" />
-                        <span className="text-xs truncate max-w-[100px]">{l.merchant.display_name}</span>
+                        <span className="text-xs truncate max-w-[140px]">{l.merchant_name}</span>
                       </div>
                     </TableCell>
                     <TableCell><ListingTypeBadge type={l.listing_type} /></TableCell>

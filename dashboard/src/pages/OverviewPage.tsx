@@ -138,7 +138,7 @@ export default function OverviewPage() {
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{l.title}</p>
-                        <p className="text-xs text-muted-foreground">{l.merchant.display_name} · {formatDate(l.created_at)}</p>
+                        <p className="text-xs text-muted-foreground">{l.merchant_name} · {formatDate(l.created_at)}</p>
                       </div>
                       <ListingTypeBadge type={l.listing_type} />
                     </div>
