@@ -15,7 +15,18 @@ export async function fetchCategories(filters: CategoryFilters = {}) {
     Object.entries(filters).filter(([, v]) => v !== undefined)
   )
   const res = await apiClient.get<PaginatedResponse<Category>>('/api/v1/admin/categories/', { params })
-  return res.data
+  // If there are more pages, fetch them all
+  const first = res.data
+  if (!first.total_pages || first.total_pages <= 1) return first
+  const rest = await Promise.all(
+    Array.from({ length: first.total_pages - 1 }, (_, i) =>
+      apiClient.get<PaginatedResponse<Category>>('/api/v1/admin/categories/', { params: { ...params, page: i + 2 } })
+    )
+  )
+  return {
+    ...first,
+    results: [first.results, ...rest.map(r => r.data.results)].flat(),
+  }
 }
 
 export async function fetchCategoryById(id: string) {

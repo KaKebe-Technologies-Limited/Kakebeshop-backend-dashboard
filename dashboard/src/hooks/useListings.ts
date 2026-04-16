@@ -1,5 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchListings, updateListing, deleteListing, type ListingFilters, type UpdateListingPayload } from '@/api/listings'
+import {
+  fetchListings, updateListing, deleteListing,
+  approveListing, rejectListing, featureListing,
+  type ListingFilters, type UpdateListingPayload,
+} from '@/api/listings'
 import { queryKeys } from '@/lib/queryKeys'
 
 export function useListings(filters: ListingFilters = {}) {
@@ -13,25 +17,43 @@ export function useListings(filters: ListingFilters = {}) {
 
 export function useListingMutations() {
   const qc = useQueryClient()
+  const invalidate = () => void qc.invalidateQueries({ queryKey: queryKeys.listings.all })
 
   const update = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateListingPayload }) => updateListing(id, data),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: queryKeys.listings.all })
-    },
+    onSuccess: invalidate,
   })
 
   const remove = useMutation({
     mutationFn: deleteListing,
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: queryKeys.listings.all })
-    },
+    onSuccess: invalidate,
+  })
+
+  const approve = useMutation({
+    mutationFn: approveListing,
+    onSuccess: invalidate,
+  })
+
+  const reject = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) => rejectListing(id, reason),
+    onSuccess: invalidate,
+  })
+
+  const feature = useMutation({
+    mutationFn: featureListing,
+    onSuccess: invalidate,
   })
 
   return {
     updateListing: update.mutateAsync,
     deleteListing: remove.mutateAsync,
+    approveListing: approve.mutateAsync,
+    rejectListing: reject.mutateAsync,
+    featureListing: feature.mutateAsync,
     isUpdating: update.isPending,
     isDeleting: remove.isPending,
+    isApproving: approve.isPending,
+    isRejecting: reject.isPending,
+    isFeaturing: feature.isPending,
   }
 }
