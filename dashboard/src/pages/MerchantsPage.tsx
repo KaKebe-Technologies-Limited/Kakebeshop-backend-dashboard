@@ -13,12 +13,16 @@ import { SearchInput } from '@/components/shared/SearchInput'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Dialog } from '@/components/ui/dialog'
 import { MerchantAvatar } from '@/components/shared/MerchantAvatar'
 import { MerchantAccountStatusBadge } from '@/components/shared/StatusBadge'
+import { CloudinaryUploader } from '@/components/shared/CloudinaryUploader'
 import { StarRating } from '@/components/shared/StarRating'
 import { Card } from '@/components/ui/card'
 import { formatDate, formatDateTime } from '@/lib/utils'
+import { useToast } from '@/components/ui/use-toast'
 import type { MerchantListItem } from '@/types'
 
 export default function MerchantsPage() {
@@ -34,6 +38,11 @@ export default function MerchantsPage() {
     id: string
     name: string
   } | null>(null)
+  const [showImageEdit, setShowImageEdit] = useState(false)
+  const [logoUrl, setLogoUrl] = useState('')
+  const [coverUrl, setCoverUrl] = useState('')
+
+  const { toast } = useToast()
 
   function set(key: string, val: string) {
     const next = new URLSearchParams(sp)
@@ -73,6 +82,28 @@ export default function MerchantsPage() {
     else if (type === 'suspend') suspendMutation.mutate(id, { onSuccess: done })
     else if (type === 'ban') banMutation.mutate(id, { onSuccess: done })
     else if (type === 'delete') deleteMutation.mutate(id, { onSuccess: done })
+  }
+
+  const openImageEdit = () => {
+    if (!detail) return
+    setLogoUrl(detail.logo ?? '')
+    setCoverUrl(detail.cover_image ?? '')
+    setShowImageEdit(true)
+  }
+
+  const saveImages = async () => {
+    if (!detail) return
+    const payload: Record<string, string> = {}
+    if (logoUrl !== (detail.logo ?? '')) payload.logo = logoUrl
+    if (coverUrl !== (detail.cover_image ?? '')) payload.cover_image = coverUrl
+    if (Object.keys(payload).length === 0) { setShowImageEdit(false); return }
+    updateMutation.mutate(
+      { id: detail.id, payload },
+      {
+        onSuccess: () => { toast({ title: 'Images updated' }); setShowImageEdit(false) },
+        onError: () => toast({ variant: 'destructive', title: 'Update failed' }),
+      }
+    )
   }
 
   const actionLabels = {
@@ -129,49 +160,38 @@ export default function MerchantsPage() {
               ) : (
                 (data.results ?? []).map((m: MerchantListItem) => (
                   <TableRow key={m.id} className="cursor-pointer" onClick={() => setSelectedId(m.id)}>
-                    <TableCell>
-                      <MerchantAvatar logo={m.logo} name={m.display_name} size="sm" />
-                    </TableCell>
+                    <TableCell><MerchantAvatar logo={m.logo} name={m.display_name} size="sm" /></TableCell>
                     <TableCell className="font-medium">{m.display_name}</TableCell>
                     <TableCell className="text-muted-foreground text-xs">{m.business_name ?? '—'}</TableCell>
                     <TableCell><StarRating rating={m.rating} total={m.total_reviews} /></TableCell>
                     <TableCell>
-                      {m.verified
-                        ? <Badge variant="success">Verified</Badge>
-                        : <Badge variant="muted">Unverified</Badge>}
+                      {m.verified ? <Badge variant="success">Verified</Badge> : <Badge variant="muted">Unverified</Badge>}
                       {m.featured && <Badge variant="warning" className="ml-1">Featured</Badge>}
                     </TableCell>
                     <TableCell><MerchantAccountStatusBadge status={m.status} /></TableCell>
                     <TableCell className="text-muted-foreground text-xs">{formatDate(m.created_at)}</TableCell>
                     <TableCell onClick={e => e.stopPropagation()}>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" title="View" onClick={() => setSelectedId(m.id)}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                        <Button variant="ghost" size="icon" title="View" onClick={() => setSelectedId(m.id)}><Eye className="h-4 w-4" /></Button>
                         {!m.verified && (
-                          <Button variant="ghost" size="icon" title="Verify"
-                            onClick={() => setConfirmAction({ type: 'verify', id: m.id, name: m.display_name })}>
+                          <Button variant="ghost" size="icon" title="Verify" onClick={() => setConfirmAction({ type: 'verify', id: m.id, name: m.display_name })}>
                             <ShieldCheck className="h-4 w-4 text-green-600" />
                           </Button>
                         )}
-                        <Button variant="ghost" size="icon" title={m.featured ? 'Unfeature' : 'Feature'}
-                          onClick={() => setConfirmAction({ type: m.featured ? 'unfeature' : 'feature', id: m.id, name: m.display_name })}>
+                        <Button variant="ghost" size="icon" title={m.featured ? 'Unfeature' : 'Feature'} onClick={() => setConfirmAction({ type: m.featured ? 'unfeature' : 'feature', id: m.id, name: m.display_name })}>
                           <Star className={`h-4 w-4 ${m.featured ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
                         </Button>
                         {m.status === 'ACTIVE' && (
-                          <Button variant="ghost" size="icon" title="Suspend"
-                            onClick={() => setConfirmAction({ type: 'suspend', id: m.id, name: m.display_name })}>
+                          <Button variant="ghost" size="icon" title="Suspend" onClick={() => setConfirmAction({ type: 'suspend', id: m.id, name: m.display_name })}>
                             <PauseCircle className="h-4 w-4 text-orange-500" />
                           </Button>
                         )}
                         {m.status !== 'BANNED' && (
-                          <Button variant="ghost" size="icon" title="Ban"
-                            onClick={() => setConfirmAction({ type: 'ban', id: m.id, name: m.display_name })}>
+                          <Button variant="ghost" size="icon" title="Ban" onClick={() => setConfirmAction({ type: 'ban', id: m.id, name: m.display_name })}>
                             <Ban className="h-4 w-4 text-red-500" />
                           </Button>
                         )}
-                        <Button variant="ghost" size="icon" title="Delete"
-                          onClick={() => setConfirmAction({ type: 'delete', id: m.id, name: m.display_name })}>
+                        <Button variant="ghost" size="icon" title="Delete" onClick={() => setConfirmAction({ type: 'delete', id: m.id, name: m.display_name })}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
@@ -182,48 +202,66 @@ export default function MerchantsPage() {
             </TableBody>
           )}
         </Table>
-        {data && (
-          <Pagination page={page} totalPages={totalPages} count={data.count} onPage={p => set('page', String(p))} />
-        )}
+        {data && <Pagination page={page} totalPages={totalPages} count={data.count} onPage={p => set('page', String(p))} />}
       </Card>
 
       {/* Confirm Action Dialog */}
-      <Dialog
-        open={!!confirmAction}
-        onClose={() => setConfirmAction(null)}
-        title="Confirm Action"
-        size="sm"
-      >
+      <Dialog open={!!confirmAction} onClose={() => setConfirmAction(null)} title="Confirm Action" size="sm">
         <div className="p-6 space-y-4">
           <p className="text-sm">
-            <span className="font-semibold">{confirmAction?.name}</span>
-            {' — '}
+            <span className="font-semibold">{confirmAction?.name}</span>{' — '}
             {confirmAction ? actionLabels[confirmAction.type] : ''}
           </p>
           <div className="flex gap-3">
-            <Button
-              className="flex-1"
-              variant={confirmAction?.type === 'delete' || confirmAction?.type === 'ban' ? 'destructive' : 'default'}
-              onClick={handleConfirm}
-              disabled={isPending}
-            >
+            <Button className="flex-1" variant={confirmAction?.type === 'delete' || confirmAction?.type === 'ban' ? 'destructive' : 'default'} onClick={handleConfirm} disabled={isPending}>
               {isPending ? 'Processing…' : 'Confirm'}
             </Button>
-            <Button variant="outline" className="flex-1" onClick={() => setConfirmAction(null)} disabled={isPending}>
-              Cancel
-            </Button>
+            <Button variant="outline" className="flex-1" onClick={() => setConfirmAction(null)} disabled={isPending}>Cancel</Button>
+          </div>
+        </div>
+      </Dialog>
+
+      {/* Image Edit Dialog */}
+      <Dialog open={showImageEdit} onClose={() => setShowImageEdit(false)} title="Update Merchant Images" size="lg">
+        <div className="p-6 space-y-5">
+          <div>
+            <Label>Logo</Label>
+            <div className="flex gap-2 mt-1">
+              <Input value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="https://..." className="flex-1" />
+              <CloudinaryUploader onUpload={url => setLogoUrl(url)} folder="merchants/logos" buttonText="Upload" />
+            </div>
+            {logoUrl && <img src={logoUrl} alt="logo preview" className="mt-2 h-16 w-16 rounded-full object-cover border border-border" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />}
+          </div>
+          <div>
+            <Label>Cover Image</Label>
+            <div className="flex gap-2 mt-1">
+              <Input value={coverUrl} onChange={e => setCoverUrl(e.target.value)} placeholder="https://..." className="flex-1" />
+              <CloudinaryUploader onUpload={url => setCoverUrl(url)} folder="merchants/covers" buttonText="Upload" />
+            </div>
+            {coverUrl && <img src={coverUrl} alt="cover preview" className="mt-2 h-24 w-full rounded-lg object-cover border border-border" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowImageEdit(false)}>Cancel</Button>
+            <Button onClick={() => void saveImages()} disabled={updateMutation.isPending}>{updateMutation.isPending ? 'Saving...' : 'Save Images'}</Button>
           </div>
         </div>
       </Dialog>
 
       {/* Detail Dialog */}
-      <Dialog open={!!selectedId && !confirmAction} onClose={() => setSelectedId(null)} title="Merchant Details" size="lg">
+      <Dialog open={!!selectedId && !confirmAction && !showImageEdit} onClose={() => setSelectedId(null)} title="Merchant Details" size="lg">
         {detailLoading ? (
           <div className="flex items-center justify-center py-16">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : detail ? (
           <div className="p-6 space-y-6">
+            {/* Cover image */}
+            {detail.cover_image && (
+              <div className="relative h-32 rounded-lg overflow-hidden bg-muted">
+                <img src={detail.cover_image} alt="cover" className="h-full w-full object-cover" />
+              </div>
+            )}
+
             {/* Header */}
             <div className="flex gap-4 items-start">
               <MerchantAvatar logo={detail.logo} name={detail.display_name} size="lg" />
@@ -259,6 +297,9 @@ export default function MerchantsPage() {
                   <Ban className="h-4 w-4 mr-1" /> Ban
                 </Button>
               )}
+              <Button size="sm" variant="outline" onClick={openImageEdit}>
+                Update Images
+              </Button>
               <Button size="sm" variant="destructive" onClick={() => setConfirmAction({ type: 'delete', id: detail.id, name: detail.display_name })}>
                 <Trash2 className="h-4 w-4 mr-1" /> Delete
               </Button>
@@ -281,7 +322,6 @@ export default function MerchantsPage() {
               ))}
             </div>
 
-            {/* Location */}
             {detail.location && (
               <div className="rounded-lg border border-border p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Location</p>

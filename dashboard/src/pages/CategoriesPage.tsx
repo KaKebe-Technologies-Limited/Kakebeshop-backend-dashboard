@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Dialog } from '@/components/ui/dialog'
+import { CloudinaryUploader } from '@/components/shared/CloudinaryUploader'
 import { useToast } from '@/components/ui/use-toast'
 import { ActiveBadge } from '@/components/shared/StatusBadge'
 import { formatDate } from '@/lib/utils'
@@ -34,17 +35,14 @@ function TreeNode({ node, depth = 0, selectedId, onSelect }: {
         {hasChildren ? (
           open ? <ChevronDown className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
                : <ChevronRight className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
-        ) : (
-          <span className="w-3.5" />
-        )}
-        {hasChildren
-          ? <FolderOpen className="h-3.5 w-3.5 flex-shrink-0 text-amber-500" />
-          : <Folder className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
-        }
+        ) : <span className="w-3.5" />}
+        {node.icon
+          ? <img src={node.icon} alt="" className="h-4 w-4 rounded object-cover flex-shrink-0" />
+          : hasChildren
+            ? <FolderOpen className="h-3.5 w-3.5 flex-shrink-0 text-amber-500" />
+            : <Folder className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />}
         <span className="flex-1 truncate">{node.name}</span>
-        {node.children_count > 0 && (
-          <span className="text-xs text-muted-foreground">({node.children_count})</span>
-        )}
+        {node.children_count > 0 && <span className="text-xs text-muted-foreground">({node.children_count})</span>}
       </button>
       {open && hasChildren && node.children.map(child => (
         <TreeNode key={child.id} node={child} depth={depth + 1} selectedId={selectedId} onSelect={onSelect} />
@@ -54,21 +52,11 @@ function TreeNode({ node, depth = 0, selectedId, onSelect }: {
 }
 
 function flattenTree(nodes: CategoryTreeNode[], depth = 0): Array<{ id: string; name: string; depth: number }> {
-  return nodes.flatMap((node) => {
-    const current = [{ id: node.id, name: node.name, depth }]
-    return [...current, ...flattenTree(node.children, depth + 1)]
-  })
+  return nodes.flatMap(node => [{ id: node.id, name: node.name, depth }, ...flattenTree(node.children, depth + 1)])
 }
 
-/**
- * Recursively filter out soft-deleted (is_active=false) nodes from the tree.
- * The backend may soft-delete by setting is_active=false rather than removing
- * the record, so we strip those nodes before rendering.
- */
 function filterActiveNodes(nodes: CategoryTreeNode[]): CategoryTreeNode[] {
-  return nodes
-    .filter(n => n.is_active !== false)
-    .map(n => ({ ...n, children: filterActiveNodes(n.children) }))
+  return nodes.filter(n => n.is_active !== false).map(n => ({ ...n, children: filterActiveNodes(n.children) }))
 }
 
 export default function CategoriesPage() {
@@ -82,10 +70,12 @@ export default function CategoriesPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   const [newCategoryName, setNewCategoryName] = useState('')
+  const [newCategoryIcon, setNewCategoryIcon] = useState('')
   const [createType, setCreateType] = useState<'parent' | 'child'>('parent')
   const [createParentId, setCreateParentId] = useState('')
 
   const [editCategoryName, setEditCategoryName] = useState('')
+  const [editCategoryIcon, setEditCategoryIcon] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const rawTreeNodes = useMemo(() => {
@@ -99,44 +89,37 @@ export default function CategoriesPage() {
     })
     return roots
   }, [catData])
+
   const treeNodes = useMemo(() => filterActiveNodes(rawTreeNodes), [rawTreeNodes])
   const flatCategories = useMemo(() => flattenTree(treeNodes), [treeNodes])
 
   const getErrorMessage = (error: unknown) => {
     if (typeof error === 'object' && error !== null && 'response' in error) {
-      const responseData = (error as { response?: { data?: unknown } }).response?.data
-      if (typeof responseData === 'string') return responseData
-      if (typeof responseData === 'object' && responseData !== null) {
-        const first = Object.values(responseData as Record<string, unknown>)[0]
+      const d = (error as { response?: { data?: unknown } }).response?.data
+      if (typeof d === 'string') return d
+      if (typeof d === 'object' && d !== null) {
+        const first = Object.values(d as Record<string, unknown>)[0]
         if (Array.isArray(first) && first.length > 0) return String(first[0])
       }
     }
-    return 'Request failed. Check backend validation and permissions.'
+    return 'Request failed.'
   }
 
-  const resetCreateForm = () => {
-    setNewCategoryName('')
-    setCreateType('parent')
-    setCreateParentId('')
-  }
-
-  const closeCreateDialog = () => {
-    setShowCreateDialog(false)
-    resetCreateForm()
-  }
+  const resetCreateForm = () => { setNewCategoryName(''); setNewCategoryIcon(''); setCreateType('parent'); setCreateParentId('') }
+  const closeCreateDialog = () => { setShowCreateDialog(false); resetCreateForm() }
 
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) return
     if (createType === 'child' && !createParentId) return
-
     setIsSubmitting(true)
     try {
-      const payload = createType === 'child'
-        ? { name: newCategoryName.trim(), parent: createParentId }
-        : { name: newCategoryName.trim() }
-
+      const payload = {
+        name: newCategoryName.trim(),
+        ...(newCategoryIcon && { icon: newCategoryIcon }),
+        ...(createType === 'child' && { parent: createParentId }),
+      }
       await createCategory(payload)
-      toast({ title: 'Category created', description: 'Category was created successfully.' })
+      toast({ title: 'Category created' })
       closeCreateDialog()
       refetch()
     } catch (e) {
@@ -149,6 +132,7 @@ export default function CategoriesPage() {
   const openEditDialog = () => {
     if (!selected) return
     setEditCategoryName(selected.name)
+    setEditCategoryIcon(selected.icon ?? '')
     setShowEditDialog(true)
   }
 
@@ -156,8 +140,8 @@ export default function CategoriesPage() {
     if (!selected || !editCategoryName.trim()) return
     setIsSubmitting(true)
     try {
-      await updateCategory({ id: selected.id, data: { name: editCategoryName.trim() } })
-      toast({ title: 'Category updated', description: 'Category changes saved successfully.' })
+      await updateCategory({ id: selected.id, data: { name: editCategoryName.trim(), icon: editCategoryIcon || undefined } })
+      toast({ title: 'Category updated' })
       setShowEditDialog(false)
       refetch()
     } catch (e) {
@@ -172,7 +156,7 @@ export default function CategoriesPage() {
     setIsSubmitting(true)
     try {
       await deleteCategory(selected.id)
-      toast({ title: 'Category deleted', description: 'Category was deleted successfully.' })
+      toast({ title: 'Category deleted' })
       setShowDeleteDialog(false)
       setSelected(null)
       refetch()
@@ -188,20 +172,12 @@ export default function CategoriesPage() {
       <Card className="overflow-hidden">
         <CardHeader className="border-b border-border flex flex-row items-center justify-between">
           <CardTitle>Category Tree</CardTitle>
-          <Button size="sm" onClick={() => setShowCreateDialog(true)}>
-            <Plus className="h-4 w-4 mr-1" /> Add
-          </Button>
+          <Button size="sm" onClick={() => setShowCreateDialog(true)}><Plus className="h-4 w-4 mr-1" /> Add</Button>
         </CardHeader>
         <div className="overflow-y-auto max-h-[calc(100vh-220px)] p-2">
-          {isLoading ? (
-            Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="mx-3 my-2 h-4 rounded shimmer" style={{ width: `${50 + (i % 3) * 15}%` }} />
-            ))
-          ) : (
-            treeNodes.map(node => (
-              <TreeNode key={node.id} node={node} selectedId={selected?.id ?? null} onSelect={setSelected} />
-            ))
-          )}
+          {isLoading
+            ? Array.from({ length: 8 }).map((_, i) => <div key={i} className="mx-3 my-2 h-4 rounded shimmer" style={{ width: `${50 + (i % 3) * 15}%` }} />)
+            : treeNodes.map(node => <TreeNode key={node.id} node={node} selectedId={selected?.id ?? null} onSelect={setSelected} />)}
         </div>
       </Card>
 
@@ -215,41 +191,32 @@ export default function CategoriesPage() {
           <div>
             <CardHeader className="border-b border-border">
               <div className="flex items-center justify-between gap-2 flex-wrap">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <CardTitle>{selected.name}</CardTitle>
-                  <ActiveBadge active={selected.is_active} />
-                  {selected.is_featured && <Badge variant="warning">Featured</Badge>}
+                <div className="flex items-center gap-3 flex-wrap">
+                  {selected.icon && <img src={selected.icon} alt="" className="h-10 w-10 rounded-lg object-cover border border-border" />}
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <CardTitle>{selected.name}</CardTitle>
+                      <ActiveBadge active={selected.is_active} />
+                      {selected.is_featured && <Badge variant="warning">Featured</Badge>}
+                    </div>
+                    {selected.parent_name && <p className="text-xs text-muted-foreground mt-0.5">Under: {selected.parent_name}</p>}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline" onClick={openEditDialog}>
-                    <Pencil className="h-4 w-4 mr-1" /> Edit
-                  </Button>
-                  <Button size="sm" variant="destructive" onClick={() => setShowDeleteDialog(true)}>
-                    <Trash2 className="h-4 w-4 mr-1" /> Delete
-                  </Button>
+                  <Button size="sm" variant="outline" onClick={openEditDialog}><Pencil className="h-4 w-4 mr-1" /> Edit</Button>
+                  <Button size="sm" variant="destructive" onClick={() => setShowDeleteDialog(true)}><Trash2 className="h-4 w-4 mr-1" /> Delete</Button>
                 </div>
               </div>
-
-              {selected.parent_name && (
-                <p className="text-xs text-muted-foreground mt-0.5">Under: {selected.parent_name}</p>
-              )}
             </CardHeader>
             <CardContent className="space-y-5">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Commerce Behaviour</p>
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant={selected.allows_cart ? 'success' : 'muted'}>
-                    {selected.allows_cart ? '✓' : '✗'} Cart
-                  </Badge>
-                  <Badge variant={selected.allows_order_intent ? 'info' : 'muted'}>
-                    {selected.allows_order_intent ? '✓' : '✗'} Order Intent
-                  </Badge>
-                  <Badge variant={selected.is_contact_only ? 'warning' : 'muted'}>
-                    {selected.is_contact_only ? '✓' : '✗'} Contact Only
-                  </Badge>
+                  <Badge variant={selected.allows_cart ? 'success' : 'muted'}>{selected.allows_cart ? '✓' : '✗'} Cart</Badge>
+                  <Badge variant={selected.allows_order_intent ? 'info' : 'muted'}>{selected.allows_order_intent ? '✓' : '✗'} Order Intent</Badge>
+                  <Badge variant={selected.is_contact_only ? 'warning' : 'muted'}>{selected.is_contact_only ? '✓' : '✗'} Contact Only</Badge>
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-4 text-sm">
                 {[
                   { label: 'Slug', value: selected.slug },
@@ -264,7 +231,6 @@ export default function CategoriesPage() {
                   </div>
                 ))}
               </div>
-
               {selected.description && (
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Description</p>
@@ -276,109 +242,79 @@ export default function CategoriesPage() {
         )}
       </Card>
 
+      {/* Create Dialog */}
       <Dialog open={showCreateDialog} onClose={closeCreateDialog}>
-        <div className="p-6">
-          <h2 className="text-lg font-semibold mb-4">Create Category</h2>
-          <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="name">Category Name</Label>
-              <Input
-                id="name"
-                value={newCategoryName}
-                onChange={e => setNewCategoryName(e.target.value)}
-                placeholder="e.g., Electronics"
-                className="mt-1"
-              />
+        <div className="p-6 space-y-4">
+          <h2 className="text-lg font-semibold">Create Category</h2>
+          <div>
+            <Label htmlFor="name">Category Name</Label>
+            <Input id="name" value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} placeholder="e.g., Electronics" className="mt-1" />
+          </div>
+          <div>
+            <Label>Icon</Label>
+            <div className="flex gap-2 mt-1">
+              <Input value={newCategoryIcon} onChange={e => setNewCategoryIcon(e.target.value)} placeholder="https://..." className="flex-1" />
+              <CloudinaryUploader onUpload={url => setNewCategoryIcon(url)} folder="categories/icons" buttonText="Upload" />
             </div>
-
+            {newCategoryIcon && <img src={newCategoryIcon} alt="icon preview" className="mt-2 h-12 w-12 rounded-lg object-cover border border-border" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />}
+          </div>
+          <div>
+            <Label htmlFor="category-type">Category Type</Label>
+            <Select id="category-type" value={createType} onChange={e => { const v = e.target.value as 'parent' | 'child'; setCreateType(v); if (v === 'parent') setCreateParentId('') }} className="mt-1">
+              <option value="parent">Parent category</option>
+              <option value="child">Child category</option>
+            </Select>
+          </div>
+          {createType === 'child' && (
             <div>
-              <Label htmlFor="category-type">Category Type</Label>
-              <Select
-                id="category-type"
-                value={createType}
-                onChange={e => {
-                  const next = e.target.value as 'parent' | 'child'
-                  setCreateType(next)
-                  if (next === 'parent') setCreateParentId('')
-                }}
-                className="mt-1"
-              >
-                <option value="parent">Parent category</option>
-                <option value="child">Child category</option>
+              <Label htmlFor="parent-category">Parent Category</Label>
+              <Select id="parent-category" value={createParentId} onChange={e => setCreateParentId(e.target.value)} className="mt-1">
+                <option value="">Select parent category</option>
+                {flatCategories.map(c => <option key={c.id} value={c.id}>{`${'-- '.repeat(c.depth)}${c.name}`}</option>)}
               </Select>
             </div>
-
-            {createType === 'child' && (
-              <div>
-                <Label htmlFor="parent-category">Parent Category</Label>
-                <Select
-                  id="parent-category"
-                  value={createParentId}
-                  onChange={e => setCreateParentId(e.target.value)}
-                  className="mt-1"
-                >
-                  <option value="">Select parent category</option>
-                  {flatCategories.map(categoryOption => (
-                    <option key={categoryOption.id} value={categoryOption.id}>
-                      {`${'-- '.repeat(categoryOption.depth)}${categoryOption.name}`}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-            )}
-          </div>
+          )}
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={closeCreateDialog}>Cancel</Button>
-            <Button
-              onClick={handleCreateCategory}
-              disabled={isSubmitting || !newCategoryName.trim() || (createType === 'child' && !createParentId)}
-            >
+            <Button onClick={handleCreateCategory} disabled={isSubmitting || !newCategoryName.trim() || (createType === 'child' && !createParentId)}>
               {isSubmitting ? 'Creating...' : 'Create'}
             </Button>
           </div>
         </div>
       </Dialog>
 
+      {/* Edit Dialog */}
       <Dialog open={showEditDialog} onClose={() => setShowEditDialog(false)}>
-        <div className="p-6">
-          <h2 className="text-lg font-semibold mb-4">Edit Category</h2>
-          <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="edit-name">Category Name</Label>
-              <Input
-                id="edit-name"
-                value={editCategoryName}
-                onChange={e => setEditCategoryName(e.target.value)}
-                placeholder="e.g., Electronics"
-                className="mt-1"
-              />
+        <div className="p-6 space-y-4">
+          <h2 className="text-lg font-semibold">Edit Category</h2>
+          <div>
+            <Label htmlFor="edit-name">Category Name</Label>
+            <Input id="edit-name" value={editCategoryName} onChange={e => setEditCategoryName(e.target.value)} className="mt-1" />
+          </div>
+          <div>
+            <Label>Icon</Label>
+            <div className="flex gap-2 mt-1">
+              <Input value={editCategoryIcon} onChange={e => setEditCategoryIcon(e.target.value)} placeholder="https://..." className="flex-1" />
+              <CloudinaryUploader onUpload={url => setEditCategoryIcon(url)} folder="categories/icons" buttonText="Upload" />
             </div>
+            {editCategoryIcon && <img src={editCategoryIcon} alt="icon preview" className="mt-2 h-12 w-12 rounded-lg object-cover border border-border" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />}
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>Cancel</Button>
-            <Button onClick={handleEditCategory} disabled={isSubmitting || !editCategoryName.trim()}>
-              {isSubmitting ? 'Saving...' : 'Save changes'}
-            </Button>
+            <Button onClick={handleEditCategory} disabled={isSubmitting || !editCategoryName.trim()}>{isSubmitting ? 'Saving...' : 'Save changes'}</Button>
           </div>
         </div>
       </Dialog>
 
+      {/* Delete Dialog */}
       <Dialog open={showDeleteDialog} onClose={() => setShowDeleteDialog(false)}>
         <div className="p-6">
           <h2 className="text-lg font-semibold mb-2">Delete Category</h2>
-          <p className="text-sm text-muted-foreground">
-            This will permanently delete <span className="font-medium text-foreground">{selected?.name}</span>.
-          </p>
-          {selected && selected.children_count > 0 && (
-            <p className="mt-2 text-xs text-amber-600">
-              This category has child categories. Backend may block deletion until children are moved or deleted.
-            </p>
-          )}
+          <p className="text-sm text-muted-foreground">This will permanently delete <span className="font-medium text-foreground">{selected?.name}</span>.</p>
+          {selected && selected.children_count > 0 && <p className="mt-2 text-xs text-amber-600">This category has child categories. Backend may block deletion until children are moved or deleted.</p>}
           <div className="mt-6 flex justify-end gap-2">
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDeleteCategory} disabled={isSubmitting}>
-              {isSubmitting ? 'Deleting...' : 'Delete'}
-            </Button>
+            <Button variant="destructive" onClick={handleDeleteCategory} disabled={isSubmitting}>{isSubmitting ? 'Deleting...' : 'Delete'}</Button>
           </div>
         </div>
       </Dialog>
