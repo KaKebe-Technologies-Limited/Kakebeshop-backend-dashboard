@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Upload, Loader2 } from 'lucide-react'
 
@@ -19,58 +19,6 @@ interface CloudinaryUploaderProps {
   variant?: 'default' | 'outline' | 'ghost'
 }
 
-declare global {
-  interface Window {
-    cloudinary: {
-      createUploadWidget: (
-        options: Record<string, unknown>,
-        callback: (error: unknown, result: { event: string; info: CloudinaryUploadInfo }) => void
-      ) => { open: () => void }
-    }
-  }
-}
-
-// Wait for window.cloudinary to be available after script loads
-function waitForCloudinary(timeout = 10000): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (window.cloudinary) { resolve(); return }
-    const start = Date.now()
-    const interval = setInterval(() => {
-      if (window.cloudinary) {
-        clearInterval(interval)
-        resolve()
-      } else if (Date.now() - start > timeout) {
-        clearInterval(interval)
-        reject(new Error('Cloudinary widget timed out'))
-      }
-    }, 100)
-  })
-}
-
-let scriptLoaded = false
-
-function loadCloudinaryScript(): Promise<void> {
-  if (scriptLoaded && window.cloudinary) return Promise.resolve()
-
-  return new Promise((resolve, reject) => {
-    const existing = document.getElementById('cloudinary-widget-script')
-    if (existing) {
-      void waitForCloudinary().then(resolve).catch(reject)
-      return
-    }
-    const script = document.createElement('script')
-    script.id = 'cloudinary-widget-script'
-    script.src = 'https://upload-widget.cloudinary.com/global/all.js'
-    script.async = true
-    script.onload = () => {
-      scriptLoaded = true
-      void waitForCloudinary().then(resolve).catch(reject)
-    }
-    script.onerror = () => reject(new Error('Failed to load Cloudinary script'))
-    document.body.appendChild(script)
-  })
-}
-
 export function CloudinaryUploader({
   onUpload,
   folder = 'kakebe',
@@ -78,64 +26,71 @@ export function CloudinaryUploader({
   disabled = false,
   variant = 'outline',
 }: CloudinaryUploaderProps) {
-  const widgetRef = useRef<{ open: () => void } | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    void loadCloudinaryScript()
-  }, [])
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
 
-  const openWidget = async () => {
     const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME as string
     const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET as string
 
     if (!cloudName || !uploadPreset) {
-      alert('Cloudinary credentials missing. Check VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET.')
+      alert('Cloudinary credentials missing.')
       return
     }
 
     setLoading(true)
     try {
-      await loadCloudinaryScript()
-    } catch (e) {
-      console.error(e)
-      alert('Failed to load Cloudinary. Check your internet connection and try again.')
-      setLoading(false)
-      return
-    }
-    setLoading(false)
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('upload_preset', uploadPreset)
+      formData.append('folder', folder)
 
-    widgetRef.current = window.cloudinary.createUploadWidget(
-      {
-        cloudName,
-        uploadPreset,
-        folder,
-        sources: ['local', 'url', 'camera'],
-        multiple: false,
-        maxFiles: 1,
-        clientAllowedFormats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'],
-        maxFileSize: 10_000_000,
-        showSkipCropButton: true,
-      },
-      (error, result) => {
-        if (error) { console.error('Cloudinary error:', error); return }
-        if (result.event === 'success') onUpload(result.info.secure_url, result.info)
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+        { method: 'POST', body: formData }
+      )
+
+      if (!res.ok) {
+        const err = await res.json() as { error?: { message?: string } }
+        throw new Error(err?.error?.message ?? 'Upload failed')
       }
-    )
 
-    widgetRef.current.open()
+      const data = await res.json() as CloudinaryUploadInfo & { secure_url: string }
+      onUpload(data.secure_url, data)
+    } catch (err) {
+      console.error('Upload error:', err)
+      alert(`Upload failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
+    } finally {
+      setLoading(false)
+      // Reset input so same file can be re-selected
+      if (inputRef.current) inputRef.current.value = ''
+    }
   }
 
   return (
-    <Button
-      type="button"
-      variant={variant}
-      size="sm"
-      onClick={() => void openWidget()}
-      disabled={disabled || loading}
-    >
-      {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-      {loading ? 'Loading...' : buttonText}
-    </Button>
+    <>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+        className="hidden"
+        onChange={e => void handleFileChange(e)}
+      />
+      <Button
+        type="button"
+        variant={variant}
+        size="sm"
+        onClick={() => inputRef.current?.click()}
+        disabled={disabled || loading}
+      >
+        {loading
+          ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          : <Upload className="h-4 w-4 mr-2" />}
+        {loading ? 'Uploading...' : buttonText}
+      </Button>
+    </>
   )
 }
