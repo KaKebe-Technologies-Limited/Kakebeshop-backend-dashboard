@@ -45,7 +45,7 @@ export const dashboardRoutes: DashboardRoute[] = [
   { path: 'banners', element: <BannersPage />, roles: ['super_admin', 'admin'], label: 'Banners' },
   { path: 'audit-logs', element: <AuditLogsPage />, roles: ['super_admin', 'admin'], label: 'Audit Logs' },
   { path: 'conversations', element: <ConversationsPage />, roles: ['super_admin', 'admin', 'moderator', 'support'], label: 'Conversations' },
-  { path: 'user-registrations', element: <UserRegistrationsPage />, roles: ['super_admin', 'admin'], label: 'User Registrations' },
+  { path: 'user-registrations', element: <UserRegistrationsPage />, roles: ['super_admin', 'admin'], label: 'User Management' },
   { path: 'visitor-analytics', element: <VisitorAnalyticsPage />, roles: ['super_admin', 'admin'], label: 'Visitor Analytics' },
   { path: 'role-management', element: <RoleManagementPage />, roles: ['super_admin', 'admin'], label: 'Role Management' },
   { path: 'settings', element: <ComingSoonPage title="Settings" description="Dashboard settings coming soon." />, roles: ['super_admin', 'admin'], label: 'Settings', comingSoon: true },

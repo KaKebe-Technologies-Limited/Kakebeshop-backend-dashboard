@@ -17,7 +17,6 @@ import { useToast } from '@/components/ui/use-toast'
 import { Eye, MousePointer, Pencil, Plus, Trash2 } from 'lucide-react'
 import type { Banner } from '@/types'
 
-// Actual values from the backend
 const placements = ['CATEGORY_TOP', 'HOME_TOP', 'HOME_MIDDLE', 'SEARCH', 'CATEGORY'] as const
 const displayTypes = ['BANNER', 'CAROUSEL'] as const
 const linkTypes = ['NONE', 'URL', 'CATEGORY'] as const
@@ -25,6 +24,36 @@ const linkTypes = ['NONE', 'URL', 'CATEGORY'] as const
 type Placement = typeof placements[number]
 type DisplayType = typeof displayTypes[number]
 type LinkType = typeof linkTypes[number]
+
+export interface BannerFormState {
+  title: string
+  image: string
+  mobileImage: string
+  linkUrl: string
+  placement: Placement
+  displayType: DisplayType
+  linkType: LinkType
+  ctaText: string
+  startDate: string
+  endDate: string
+  sortOrder: number
+  isActive: boolean
+}
+
+export const defaultForm: BannerFormState = {
+  title: '',
+  image: '',
+  mobileImage: '',
+  linkUrl: '',
+  placement: 'CATEGORY_TOP',
+  displayType: 'BANNER',
+  linkType: 'NONE',
+  ctaText: '',
+  startDate: '',
+  endDate: '',
+  sortOrder: 0,
+  isActive: true,
+}
 
 const getErrorMessage = (error: unknown) => {
   if (typeof error === 'object' && error !== null && 'response' in error) {
@@ -44,6 +73,7 @@ const getErrorMessage = (error: unknown) => {
   return error instanceof Error ? error.message : 'Request failed'
 }
 
+// Defined OUTSIDE the parent to prevent remount on every render
 function ImageField({ label, value, onChange, id, folder }: {
   label: string; value: string; onChange: (v: string) => void; id: string; folder: string
 }) {
@@ -59,34 +89,69 @@ function ImageField({ label, value, onChange, id, folder }: {
   )
 }
 
-interface BannerFormState {
-  title: string
-  image: string
-  mobileImage: string
-  linkUrl: string
-  placement: Placement
-  displayType: DisplayType
-  linkType: LinkType
-  ctaText: string
-  startDate: string
-  endDate: string
-  sortOrder: number
-  isActive: boolean
-}
-
-const defaultForm: BannerFormState = {
-  title: '',
-  image: '',
-  mobileImage: '',
-  linkUrl: '',
-  placement: 'CATEGORY_TOP',
-  displayType: 'BANNER',
-  linkType: 'NONE',
-  ctaText: '',
-  startDate: '',
-  endDate: '',
-  sortOrder: 0,
-  isActive: true,
+// Defined OUTSIDE the parent to prevent remount on every render
+function BannerFormFields({ form, setField }: {
+  form: BannerFormState
+  setField: <K extends keyof BannerFormState>(key: K, value: BannerFormState[K]) => void
+}) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label>Title</Label>
+        <Input className="mt-1" value={form.title} onChange={e => setField('title', e.target.value)} />
+      </div>
+      <ImageField label="Image" value={form.image} onChange={v => setField('image', v)} id="banner-image" folder="banners" />
+      <ImageField label="Mobile Image (optional)" value={form.mobileImage} onChange={v => setField('mobileImage', v)} id="banner-mobile-image" folder="banners" />
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>Placement</Label>
+          <Select className="mt-1" value={form.placement} onChange={e => setField('placement', e.target.value as Placement)}>
+            {placements.map(p => <option key={p} value={p}>{p}</option>)}
+          </Select>
+        </div>
+        <div>
+          <Label>Display Type</Label>
+          <Select className="mt-1" value={form.displayType} onChange={e => setField('displayType', e.target.value as DisplayType)}>
+            {displayTypes.map(t => <option key={t} value={t}>{t}</option>)}
+          </Select>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>Link Type</Label>
+          <Select className="mt-1" value={form.linkType} onChange={e => setField('linkType', e.target.value as LinkType)}>
+            {linkTypes.map(t => <option key={t} value={t}>{t}</option>)}
+          </Select>
+        </div>
+        <div>
+          <Label>Link URL</Label>
+          <Input className="mt-1" value={form.linkUrl} onChange={e => setField('linkUrl', e.target.value)} placeholder="https://..." />
+        </div>
+      </div>
+      <div>
+        <Label>CTA Text (optional)</Label>
+        <Input className="mt-1" value={form.ctaText} onChange={e => setField('ctaText', e.target.value)} placeholder="e.g. Shop Now" />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>Start Date</Label>
+          <Input type="datetime-local" className="mt-1" value={form.startDate} onChange={e => setField('startDate', e.target.value)} />
+        </div>
+        <div>
+          <Label>End Date</Label>
+          <Input type="datetime-local" className="mt-1" value={form.endDate} onChange={e => setField('endDate', e.target.value)} />
+        </div>
+      </div>
+      <div>
+        <Label>Sort Order</Label>
+        <Input type="number" className="mt-1" value={form.sortOrder} onChange={e => setField('sortOrder', parseInt(e.target.value) || 0)} />
+      </div>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={form.isActive} onChange={e => setField('isActive', e.target.checked)} />
+        Active
+      </label>
+    </div>
+  )
 }
 
 export default function BannersPage() {
@@ -110,18 +175,19 @@ export default function BannersPage() {
 
   const openEdit = (b: Banner) => {
     setEditing(b)
+    const raw = b as unknown as Record<string, unknown>
     setForm({
       title: b.title,
       image: b.image,
-      mobileImage: (b as unknown as Record<string, string>).mobile_image ?? b.image,
+      mobileImage: String(raw.mobile_image ?? b.image),
       linkUrl: b.link_url ?? '',
-      placement: ((b as unknown as Record<string, string>).placement as Placement) ?? 'CATEGORY_TOP',
-      displayType: ((b as unknown as Record<string, string>).display_type as DisplayType) ?? 'BANNER',
-      linkType: ((b as unknown as Record<string, string>).link_type as LinkType) ?? 'NONE',
-      ctaText: (b as unknown as Record<string, string>).cta_text ?? '',
+      placement: (raw.placement as Placement) ?? 'CATEGORY_TOP',
+      displayType: (raw.display_type as DisplayType) ?? 'BANNER',
+      linkType: (raw.link_type as LinkType) ?? 'NONE',
+      ctaText: String(raw.cta_text ?? ''),
       startDate: b.start_date ? b.start_date.slice(0, 16) : '',
       endDate: b.end_date ? b.end_date.slice(0, 16) : '',
-      sortOrder: (b as unknown as Record<string, number>).sort_order ?? 0,
+      sortOrder: Number(raw.sort_order ?? 0),
       isActive: b.is_active,
     })
   }
@@ -174,44 +240,6 @@ export default function BannersPage() {
     }
   }
 
-  const FormFields = () => (
-    <div className="space-y-4">
-      <div><Label>Title</Label><Input className="mt-1" value={form.title} onChange={e => setField('title', e.target.value)} /></div>
-      <ImageField label="Image" value={form.image} onChange={v => setField('image', v)} id="banner-image" folder="banners" />
-      <ImageField label="Mobile Image (optional, uses main image if empty)" value={form.mobileImage} onChange={v => setField('mobileImage', v)} id="banner-mobile-image" folder="banners" />
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label>Placement</Label>
-          <Select className="mt-1" value={form.placement} onChange={e => setField('placement', e.target.value as Placement)}>
-            {placements.map(p => <option key={p} value={p}>{p}</option>)}
-          </Select>
-        </div>
-        <div>
-          <Label>Display Type</Label>
-          <Select className="mt-1" value={form.displayType} onChange={e => setField('displayType', e.target.value as DisplayType)}>
-            {displayTypes.map(t => <option key={t} value={t}>{t}</option>)}
-          </Select>
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label>Link Type</Label>
-          <Select className="mt-1" value={form.linkType} onChange={e => setField('linkType', e.target.value as LinkType)}>
-            {linkTypes.map(t => <option key={t} value={t}>{t}</option>)}
-          </Select>
-        </div>
-        <div><Label>Link URL</Label><Input className="mt-1" value={form.linkUrl} onChange={e => setField('linkUrl', e.target.value)} placeholder="https://..." /></div>
-      </div>
-      <div><Label>CTA Text (optional)</Label><Input className="mt-1" value={form.ctaText} onChange={e => setField('ctaText', e.target.value)} placeholder="e.g. Shop Now" /></div>
-      <div className="grid grid-cols-2 gap-4">
-        <div><Label>Start Date</Label><Input type="datetime-local" className="mt-1" value={form.startDate} onChange={e => setField('startDate', e.target.value)} /></div>
-        <div><Label>End Date</Label><Input type="datetime-local" className="mt-1" value={form.endDate} onChange={e => setField('endDate', e.target.value)} /></div>
-      </div>
-      <div><Label>Sort Order</Label><Input type="number" className="mt-1" value={form.sortOrder} onChange={e => setField('sortOrder', parseInt(e.target.value) || 0)} /></div>
-      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.isActive} onChange={e => setField('isActive', e.target.checked)} /> Active</label>
-    </div>
-  )
-
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
@@ -229,43 +257,46 @@ export default function BannersPage() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {(data?.results ?? []).map(b => (
-            <Card key={b.id} className="overflow-hidden">
-              <div className="relative aspect-[2/1] bg-muted">
-                <img src={b.image} alt={b.title} className="h-full w-full object-cover" />
-                <div className="absolute top-2 right-2 flex gap-1">
-                  <ActiveBadge active={b.is_active} />
-                  {b.is_verified && <Badge variant="success">Verified</Badge>}
+          {(data?.results ?? []).map(b => {
+            const raw = b as unknown as Record<string, unknown>
+            return (
+              <Card key={b.id} className="overflow-hidden">
+                <div className="relative aspect-[2/1] bg-muted">
+                  <img src={b.image} alt={b.title} className="h-full w-full object-cover" />
+                  <div className="absolute top-2 right-2 flex gap-1">
+                    <ActiveBadge active={b.is_active} />
+                    {b.is_verified && <Badge variant="success">Verified</Badge>}
+                  </div>
                 </div>
-              </div>
-              <div className="p-4 space-y-3">
-                <div>
-                  <p className="font-semibold text-sm">{b.title}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {(b as unknown as Record<string, string>).placement} · {(b as unknown as Record<string, string>).display_type}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{formatDate(b.start_date)} – {formatDate(b.end_date)}</p>
+                <div className="p-4 space-y-3">
+                  <div>
+                    <p className="font-semibold text-sm">{b.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {String(raw.placement ?? '')} · {String(raw.display_type ?? '')}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{formatDate(b.start_date)} – {formatDate(b.end_date)}</p>
+                  </div>
+                  <div className="flex gap-4 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{(b.impression_count ?? 0).toLocaleString()}</span>
+                    <span className="flex items-center gap-1"><MousePointer className="h-3 w-3" />{(b.click_count ?? 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {b.is_verified
+                      ? <Button size="sm" variant="outline" onClick={() => unverify.mutate(b.id)} disabled={unverify.isPending}>Unverify</Button>
+                      : <Button size="sm" onClick={() => verify.mutate(b.id)} disabled={verify.isPending}>Verify</Button>}
+                    <Button size="sm" variant="outline" onClick={() => openEdit(b)}><Pencil className="mr-1 h-3.5 w-3.5" /> Edit</Button>
+                    <Button size="sm" variant="destructive" onClick={() => setDeleting(b)}><Trash2 className="mr-1 h-3.5 w-3.5" /> Delete</Button>
+                  </div>
                 </div>
-                <div className="flex gap-4 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{(b.impression_count ?? 0).toLocaleString()}</span>
-                  <span className="flex items-center gap-1"><MousePointer className="h-3 w-3" />{(b.click_count ?? 0).toLocaleString()}</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {b.is_verified
-                    ? <Button size="sm" variant="outline" onClick={() => unverify.mutate(b.id)} disabled={unverify.isPending}>Unverify</Button>
-                    : <Button size="sm" onClick={() => verify.mutate(b.id)} disabled={verify.isPending}>Verify</Button>}
-                  <Button size="sm" variant="outline" onClick={() => openEdit(b)}><Pencil className="mr-1 h-3.5 w-3.5" /> Edit</Button>
-                  <Button size="sm" variant="destructive" onClick={() => setDeleting(b)}><Trash2 className="mr-1 h-3.5 w-3.5" /> Delete</Button>
-                </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            )
+          })}
         </div>
       )}
 
       <Dialog open={showCreate} onClose={() => setShowCreate(false)} title="Create Banner" size="lg">
         <div className="p-6 space-y-4">
-          <FormFields />
+          <BannerFormFields form={form} setField={setField} />
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
             <Button onClick={() => void onCreate()} disabled={isCreatingBanner || !form.title.trim() || !form.image.trim()}>
@@ -277,7 +308,7 @@ export default function BannersPage() {
 
       <Dialog open={!!editing} onClose={() => setEditing(null)} title="Edit Banner" size="lg">
         <div className="p-6 space-y-4">
-          <FormFields />
+          <BannerFormFields form={form} setField={setField} />
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
             <Button onClick={() => void onUpdate()} disabled={isUpdatingBanner || !form.title.trim()}>
