@@ -183,7 +183,7 @@ export default function ListingsPage() {
                 <TableEmpty colSpan={9} />
               ) : (
                 (data.results ?? []).map((l: Listing) => (
-                  <TableRow key={l.id}>
+                  <TableRow key={l.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openAction('edit', l)}>
                     <TableCell>
                       {l.primary_image
                         ? <img src={l.primary_image.image} alt="" className="h-9 w-9 rounded object-cover" />
