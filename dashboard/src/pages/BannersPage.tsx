@@ -15,37 +15,37 @@ import { formatDate } from '@/lib/utils'
 import { queryKeys } from '@/lib/queryKeys'
 import { useToast } from '@/components/ui/use-toast'
 import { Eye, MousePointer, Pencil, Plus, Trash2 } from 'lucide-react'
-import type { Banner, BannerPlacement } from '@/types'
+import type { Banner } from '@/types'
 
-const placements: BannerPlacement[] = ['HOME_TOP', 'HOME_MIDDLE', 'CATEGORY', 'SEARCH']
+// Actual values from the backend
+const placements = ['CATEGORY_TOP', 'HOME_TOP', 'HOME_MIDDLE', 'SEARCH', 'CATEGORY'] as const
+const displayTypes = ['BANNER', 'CAROUSEL'] as const
+const linkTypes = ['NONE', 'URL', 'CATEGORY'] as const
+
+type Placement = typeof placements[number]
+type DisplayType = typeof displayTypes[number]
+type LinkType = typeof linkTypes[number]
 
 const getErrorMessage = (error: unknown) => {
   if (typeof error === 'object' && error !== null && 'response' in error) {
     const response = (error as { response?: { status?: number; data?: unknown } }).response
     const status = response?.status
-    const responseData = response?.data
-    if (typeof responseData === 'string') return `${status}: ${responseData}`
-    if (typeof responseData === 'object' && responseData !== null) {
-      // Return the full error object as JSON so we can see exactly what the backend says
-      const detail = (responseData as Record<string, unknown>).detail
-        ?? (responseData as Record<string, unknown>).error
-        ?? (responseData as Record<string, unknown>).message
+    const d = response?.data
+    if (typeof d === 'string') return `${status}: ${d}`
+    if (typeof d === 'object' && d !== null) {
+      const detail = (d as Record<string, unknown>).detail ?? (d as Record<string, unknown>).error ?? (d as Record<string, unknown>).message
       if (detail) return `${status}: ${String(detail)}`
-      const first = Object.entries(responseData as Record<string, unknown>)[0]
+      const first = Object.entries(d as Record<string, unknown>)[0]
       if (first) return `${status}: ${first[0]}: ${Array.isArray(first[1]) ? String(first[1][0]) : String(first[1])}`
-      return `${status}: ${JSON.stringify(responseData)}`
+      return `${status}: ${JSON.stringify(d)}`
     }
-    return `HTTP ${status}: Request failed`
+    return `HTTP ${status}`
   }
   return error instanceof Error ? error.message : 'Request failed'
 }
 
 function ImageField({ label, value, onChange, id, folder }: {
-  label: string
-  value: string
-  onChange: (v: string) => void
-  id: string
-  folder: string
+  label: string; value: string; onChange: (v: string) => void; id: string; folder: string
 }) {
   return (
     <div>
@@ -54,11 +54,39 @@ function ImageField({ label, value, onChange, id, folder }: {
         <Input id={id} value={value} onChange={e => onChange(e.target.value)} className="flex-1" placeholder="https://..." />
         <CloudinaryUploader onUpload={url => onChange(url)} folder={folder} buttonText="Upload" />
       </div>
-      {value && (
-        <img src={value} alt="preview" className="mt-2 h-20 w-full object-cover rounded-lg border border-border" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
-      )}
+      {value && <img src={value} alt="preview" className="mt-2 h-20 w-full object-cover rounded-lg border border-border" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />}
     </div>
   )
+}
+
+interface BannerFormState {
+  title: string
+  image: string
+  mobileImage: string
+  linkUrl: string
+  placement: Placement
+  displayType: DisplayType
+  linkType: LinkType
+  ctaText: string
+  startDate: string
+  endDate: string
+  sortOrder: number
+  isActive: boolean
+}
+
+const defaultForm: BannerFormState = {
+  title: '',
+  image: '',
+  mobileImage: '',
+  linkUrl: '',
+  placement: 'CATEGORY_TOP',
+  displayType: 'BANNER',
+  linkType: 'NONE',
+  ctaText: '',
+  startDate: '',
+  endDate: '',
+  sortOrder: 0,
+  isActive: true,
 }
 
 export default function BannersPage() {
@@ -73,44 +101,63 @@ export default function BannersPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [editing, setEditing] = useState<Banner | null>(null)
   const [deleting, setDeleting] = useState<Banner | null>(null)
-  const [title, setTitle] = useState('')
-  const [image, setImage] = useState('')
-  const [linkUrl, setLinkUrl] = useState('')
-  const [placement, setPlacement] = useState<BannerPlacement>('HOME_TOP')
-  const [isActive, setIsActive] = useState(true)
+  const [form, setForm] = useState<BannerFormState>(defaultForm)
 
-  const resetForm = () => { setTitle(''); setImage(''); setLinkUrl(''); setPlacement('HOME_TOP'); setIsActive(true) }
+  const setField = <K extends keyof BannerFormState>(key: K, value: BannerFormState[K]) =>
+    setForm(prev => ({ ...prev, [key]: value }))
 
-  const openCreate = () => { resetForm(); setShowCreate(true) }
+  const openCreate = () => { setForm(defaultForm); setShowCreate(true) }
 
-  const openEdit = (banner: Banner) => {
-    setEditing(banner)
-    setTitle(banner.title)
-    setImage(banner.image)
-    setLinkUrl(banner.link_url ?? '')
-    setPlacement(banner.placement)
-    setIsActive(banner.is_active)
+  const openEdit = (b: Banner) => {
+    setEditing(b)
+    setForm({
+      title: b.title,
+      image: b.image,
+      mobileImage: (b as unknown as Record<string, string>).mobile_image ?? b.image,
+      linkUrl: b.link_url ?? '',
+      placement: ((b as unknown as Record<string, string>).placement as Placement) ?? 'CATEGORY_TOP',
+      displayType: ((b as unknown as Record<string, string>).display_type as DisplayType) ?? 'BANNER',
+      linkType: ((b as unknown as Record<string, string>).link_type as LinkType) ?? 'NONE',
+      ctaText: (b as unknown as Record<string, string>).cta_text ?? '',
+      startDate: b.start_date ? b.start_date.slice(0, 16) : '',
+      endDate: b.end_date ? b.end_date.slice(0, 16) : '',
+      sortOrder: (b as unknown as Record<string, number>).sort_order ?? 0,
+      isActive: b.is_active,
+    })
   }
 
+  const buildPayload = (f: BannerFormState) => ({
+    title: f.title.trim(),
+    image: f.image.trim(),
+    mobile_image: f.mobileImage.trim() || f.image.trim(),
+    link_url: f.linkUrl.trim() || '',
+    placement: f.placement,
+    display_type: f.displayType,
+    link_type: f.linkType,
+    cta_text: f.ctaText.trim(),
+    start_date: f.startDate ? new Date(f.startDate).toISOString() : null,
+    end_date: f.endDate ? new Date(f.endDate).toISOString() : null,
+    sort_order: f.sortOrder,
+    is_active: f.isActive,
+  })
+
   const onCreate = async () => {
-    if (!title.trim() || !image.trim()) return
+    if (!form.title.trim() || !form.image.trim()) return
     try {
-      await createBanner({ title: title.trim(), image: image.trim(), link_url: linkUrl.trim() || null, placement, is_active: isActive })
+      await createBanner(buildPayload(form) as Parameters<typeof createBanner>[0])
       toast({ title: 'Banner created' })
       setShowCreate(false)
-      resetForm()
     } catch (e) {
       toast({ variant: 'destructive', title: 'Create failed', description: getErrorMessage(e) })
     }
   }
 
   const onUpdate = async () => {
-    if (!editing || !title.trim()) return
+    if (!editing || !form.title.trim()) return
     try {
-      await updateBanner({ id: editing.id, data: { title: title.trim(), image: image.trim() || undefined, link_url: linkUrl.trim() || null, placement, is_active: isActive } })
+      await updateBanner({ id: editing.id, data: buildPayload(form) as Parameters<typeof updateBanner>[0]['data'] })
       toast({ title: 'Banner updated' })
       setEditing(null)
-      resetForm()
     } catch (e) {
       toast({ variant: 'destructive', title: 'Update failed', description: getErrorMessage(e) })
     }
@@ -126,6 +173,44 @@ export default function BannersPage() {
       toast({ variant: 'destructive', title: 'Delete failed', description: getErrorMessage(e) })
     }
   }
+
+  const FormFields = () => (
+    <div className="space-y-4">
+      <div><Label>Title</Label><Input className="mt-1" value={form.title} onChange={e => setField('title', e.target.value)} /></div>
+      <ImageField label="Image" value={form.image} onChange={v => setField('image', v)} id="banner-image" folder="banners" />
+      <ImageField label="Mobile Image (optional, uses main image if empty)" value={form.mobileImage} onChange={v => setField('mobileImage', v)} id="banner-mobile-image" folder="banners" />
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>Placement</Label>
+          <Select className="mt-1" value={form.placement} onChange={e => setField('placement', e.target.value as Placement)}>
+            {placements.map(p => <option key={p} value={p}>{p}</option>)}
+          </Select>
+        </div>
+        <div>
+          <Label>Display Type</Label>
+          <Select className="mt-1" value={form.displayType} onChange={e => setField('displayType', e.target.value as DisplayType)}>
+            {displayTypes.map(t => <option key={t} value={t}>{t}</option>)}
+          </Select>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>Link Type</Label>
+          <Select className="mt-1" value={form.linkType} onChange={e => setField('linkType', e.target.value as LinkType)}>
+            {linkTypes.map(t => <option key={t} value={t}>{t}</option>)}
+          </Select>
+        </div>
+        <div><Label>Link URL</Label><Input className="mt-1" value={form.linkUrl} onChange={e => setField('linkUrl', e.target.value)} placeholder="https://..." /></div>
+      </div>
+      <div><Label>CTA Text (optional)</Label><Input className="mt-1" value={form.ctaText} onChange={e => setField('ctaText', e.target.value)} placeholder="e.g. Shop Now" /></div>
+      <div className="grid grid-cols-2 gap-4">
+        <div><Label>Start Date</Label><Input type="datetime-local" className="mt-1" value={form.startDate} onChange={e => setField('startDate', e.target.value)} /></div>
+        <div><Label>End Date</Label><Input type="datetime-local" className="mt-1" value={form.endDate} onChange={e => setField('endDate', e.target.value)} /></div>
+      </div>
+      <div><Label>Sort Order</Label><Input type="number" className="mt-1" value={form.sortOrder} onChange={e => setField('sortOrder', parseInt(e.target.value) || 0)} /></div>
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.isActive} onChange={e => setField('isActive', e.target.checked)} /> Active</label>
+    </div>
+  )
 
   return (
     <div className="space-y-4">
@@ -144,7 +229,7 @@ export default function BannersPage() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {data?.results.map(b => (
+          {(data?.results ?? []).map(b => (
             <Card key={b.id} className="overflow-hidden">
               <div className="relative aspect-[2/1] bg-muted">
                 <img src={b.image} alt={b.title} className="h-full w-full object-cover" />
@@ -156,7 +241,10 @@ export default function BannersPage() {
               <div className="p-4 space-y-3">
                 <div>
                   <p className="font-semibold text-sm">{b.title}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{b.placement} · {formatDate(b.start_date)} – {formatDate(b.end_date)}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {(b as unknown as Record<string, string>).placement} · {(b as unknown as Record<string, string>).display_type}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{formatDate(b.start_date)} – {formatDate(b.end_date)}</p>
                 </div>
                 <div className="flex gap-4 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{(b.impression_count ?? 0).toLocaleString()}</span>
@@ -176,46 +264,32 @@ export default function BannersPage() {
       )}
 
       <Dialog open={showCreate} onClose={() => setShowCreate(false)} title="Create Banner" size="lg">
-        <div className="space-y-4 p-6">
-          <div><Label htmlFor="create-title">Title</Label><Input id="create-title" className="mt-1" value={title} onChange={e => setTitle(e.target.value)} /></div>
-          <ImageField label="Image" value={image} onChange={setImage} id="create-image" folder="banners" />
-          <div><Label htmlFor="create-link">Link URL</Label><Input id="create-link" className="mt-1" value={linkUrl} onChange={e => setLinkUrl(e.target.value)} /></div>
-          <div>
-            <Label htmlFor="create-placement">Placement</Label>
-            <Select id="create-placement" className="mt-1" value={placement} onChange={e => setPlacement(e.target.value as BannerPlacement)}>
-              {placements.map(p => <option key={p} value={p}>{p}</option>)}
-            </Select>
-          </div>
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)} /> Active banner</label>
+        <div className="p-6 space-y-4">
+          <FormFields />
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
-            <Button onClick={() => void onCreate()} disabled={isCreatingBanner || !title.trim() || !image.trim()}>{isCreatingBanner ? 'Creating...' : 'Create'}</Button>
+            <Button onClick={() => void onCreate()} disabled={isCreatingBanner || !form.title.trim() || !form.image.trim()}>
+              {isCreatingBanner ? 'Creating...' : 'Create'}
+            </Button>
           </div>
         </div>
       </Dialog>
 
       <Dialog open={!!editing} onClose={() => setEditing(null)} title="Edit Banner" size="lg">
-        <div className="space-y-4 p-6">
-          <div><Label htmlFor="edit-title">Title</Label><Input id="edit-title" className="mt-1" value={title} onChange={e => setTitle(e.target.value)} /></div>
-          <ImageField label="Image" value={image} onChange={setImage} id="edit-image" folder="banners" />
-          <div><Label htmlFor="edit-link">Link URL</Label><Input id="edit-link" className="mt-1" value={linkUrl} onChange={e => setLinkUrl(e.target.value)} /></div>
-          <div>
-            <Label htmlFor="edit-placement">Placement</Label>
-            <Select id="edit-placement" className="mt-1" value={placement} onChange={e => setPlacement(e.target.value as BannerPlacement)}>
-              {placements.map(p => <option key={p} value={p}>{p}</option>)}
-            </Select>
-          </div>
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)} /> Active banner</label>
+        <div className="p-6 space-y-4">
+          <FormFields />
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
-            <Button onClick={() => void onUpdate()} disabled={isUpdatingBanner || !title.trim()}>{isUpdatingBanner ? 'Saving...' : 'Save changes'}</Button>
+            <Button onClick={() => void onUpdate()} disabled={isUpdatingBanner || !form.title.trim()}>
+              {isUpdatingBanner ? 'Saving...' : 'Save changes'}
+            </Button>
           </div>
         </div>
       </Dialog>
 
       <Dialog open={!!deleting} onClose={() => setDeleting(null)} title="Delete Banner">
         <div className="p-6">
-          <p className="text-sm text-muted-foreground">This will permanently delete banner <span className="font-medium text-foreground">{deleting?.title}</span>.</p>
+          <p className="text-sm text-muted-foreground">Permanently delete <span className="font-medium text-foreground">{deleting?.title}</span>?</p>
           <div className="mt-6 flex justify-end gap-2">
             <Button variant="outline" onClick={() => setDeleting(null)}>Cancel</Button>
             <Button variant="destructive" onClick={() => void onDelete()} disabled={isDeletingBanner}>{isDeletingBanner ? 'Deleting...' : 'Delete'}</Button>

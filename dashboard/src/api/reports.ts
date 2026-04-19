@@ -16,12 +16,17 @@ export async function fetchTransactions(params: Record<string, unknown> = {}) {
 // Banners
 export interface BannerPayload {
   title: string
-  placement: Banner['placement']
-  image?: string
+  image: string
+  mobile_image?: string
+  placement: string
+  display_type?: string
+  link_type?: string
   link_url?: string | null
+  cta_text?: string
   is_active?: boolean
   start_date?: string | null
   end_date?: string | null
+  sort_order?: number
 }
 
 export async function fetchBanners(params: Record<string, unknown> = {}) {
