@@ -21,14 +21,23 @@ const placements: BannerPlacement[] = ['HOME_TOP', 'HOME_MIDDLE', 'CATEGORY', 'S
 
 const getErrorMessage = (error: unknown) => {
   if (typeof error === 'object' && error !== null && 'response' in error) {
-    const responseData = (error as { response?: { data?: unknown } }).response?.data
-    if (typeof responseData === 'string') return responseData
+    const response = (error as { response?: { status?: number; data?: unknown } }).response
+    const status = response?.status
+    const responseData = response?.data
+    if (typeof responseData === 'string') return `${status}: ${responseData}`
     if (typeof responseData === 'object' && responseData !== null) {
-      const first = Object.values(responseData as Record<string, unknown>)[0]
-      if (Array.isArray(first) && first.length > 0) return String(first[0])
+      // Return the full error object as JSON so we can see exactly what the backend says
+      const detail = (responseData as Record<string, unknown>).detail
+        ?? (responseData as Record<string, unknown>).error
+        ?? (responseData as Record<string, unknown>).message
+      if (detail) return `${status}: ${String(detail)}`
+      const first = Object.entries(responseData as Record<string, unknown>)[0]
+      if (first) return `${status}: ${first[0]}: ${Array.isArray(first[1]) ? String(first[1][0]) : String(first[1])}`
+      return `${status}: ${JSON.stringify(responseData)}`
     }
+    return `HTTP ${status}: Request failed`
   }
-  return 'Request failed. Check backend validation and permissions.'
+  return error instanceof Error ? error.message : 'Request failed'
 }
 
 function ImageField({ label, value, onChange, id, folder }: {
