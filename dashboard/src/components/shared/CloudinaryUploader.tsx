@@ -19,6 +19,15 @@ interface CloudinaryUploaderProps {
   variant?: 'default' | 'outline' | 'ghost'
 }
 
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
 export function CloudinaryUploader({
   onUpload,
   folder = 'kakebe',
@@ -43,29 +52,35 @@ export function CloudinaryUploader({
 
     setLoading(true)
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('upload_preset', uploadPreset)
-      formData.append('folder', folder)
+      // Convert to base64 to avoid CORS preflight issues with FormData/File
+      const base64 = await fileToBase64(file)
+
+      const body = new URLSearchParams()
+      body.append('file', base64)
+      body.append('upload_preset', uploadPreset)
+      body.append('folder', folder)
 
       const res = await fetch(
         `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-        { method: 'POST', body: formData }
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body.toString(),
+        }
       )
 
-      if (!res.ok) {
-        const err = await res.json() as { error?: { message?: string } }
-        throw new Error(err?.error?.message ?? 'Upload failed')
+      const data = await res.json() as CloudinaryUploadInfo & { error?: { message: string } }
+
+      if (!res.ok || data.error) {
+        throw new Error(data.error?.message ?? 'Upload failed')
       }
 
-      const data = await res.json() as CloudinaryUploadInfo & { secure_url: string }
       onUpload(data.secure_url, data)
     } catch (err) {
       console.error('Upload error:', err)
       alert(`Upload failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
     } finally {
       setLoading(false)
-      // Reset input so same file can be re-selected
       if (inputRef.current) inputRef.current.value = ''
     }
   }
