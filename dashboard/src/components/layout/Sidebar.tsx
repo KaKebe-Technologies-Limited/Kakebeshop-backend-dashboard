@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Store, ListChecks, Tag, FolderTree,
   ShoppingBag, BarChart3, Flag, CreditCard, Image, MessageSquare,
   ScrollText, ChevronLeft, ChevronRight, Users, UserCog,
-  Banknote, Ticket, Star, Settings, Shield, Images,
+  Banknote, Ticket, Star, Settings, Shield, Images, ShoppingCart, Bell,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { dashboardRoutes } from '@/router'
@@ -32,6 +32,8 @@ const iconMap: Record<string, React.ElementType> = {
   'coupons': Ticket,
   'reviews': Star,
   'role-management': Shield,
+  'cart-wishlist': ShoppingCart,
+  'notifications': Bell,
 }
 
 const navSections = [
@@ -39,9 +41,9 @@ const navSections = [
   { label: 'Catalog', paths: ['merchants', 'listings', 'categories', 'tags'] },
   { label: 'Media', paths: ['image-library', 'banners'] },
   { label: 'Users', paths: ['customers', 'staff', 'user-registrations', 'role-management'] },
-  { label: 'Commerce', paths: ['orders', 'transactions', 'payouts', 'coupons'] },
+  { label: 'Commerce', paths: ['orders', 'transactions', 'payouts', 'coupons', 'cart-wishlist'] },
   { label: 'Trust & Safety', paths: ['reviews', 'reports'] },
-  { label: 'Content', paths: ['conversations'] },
+  { label: 'Content', paths: ['conversations', 'notifications'] },
   { label: 'Insights', paths: ['analytics', 'visitor-analytics', 'audit-logs'] },
   { label: 'Other', paths: ['settings', 'help'] },
 ]

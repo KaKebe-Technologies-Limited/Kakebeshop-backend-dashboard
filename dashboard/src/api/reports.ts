@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { Report, Transaction, Banner, PaginatedResponse, AuditLog } from '@/types'
+import type { Report, Transaction, Banner, PaginatedResponse, AuditLog, ListingReview, MerchantReview, MerchantScore, Notification, PushToken } from '@/types'
 
 // Content Reports
 export async function fetchReports(params: Record<string, unknown> = {}) {
@@ -64,9 +64,51 @@ export async function fetchAuditLogs(params: Record<string, unknown> = {}) {
   return res.data
 }
 
+// Reviews
+export async function fetchListingReviews(params: Record<string, unknown> = {}) {
+  const res = await apiClient.get<PaginatedResponse<ListingReview>>('/api/v1/listing-reviews/', { params })
+  return res.data
+}
+
+export async function deleteListingReview(id: string) {
+  await apiClient.delete(`/api/v1/listing-reviews/${id}/`)
+}
+
+export async function fetchMerchantReviews(params: Record<string, unknown> = {}) {
+  const res = await apiClient.get<PaginatedResponse<MerchantReview>>('/api/v1/merchant-reviews/', { params })
+  return res.data
+}
+
+export async function deleteMerchantReview(id: string) {
+  await apiClient.delete(`/api/v1/merchant-reviews/${id}/`)
+}
+
+export async function fetchMerchantScores(params: Record<string, unknown> = {}) {
+  const res = await apiClient.get<PaginatedResponse<MerchantScore>>('/api/v1/merchant-scores/', { params })
+  return res.data
+}
+
+// Notifications
+export async function fetchNotifications(params: Record<string, unknown> = {}) {
+  const res = await apiClient.get<PaginatedResponse<Notification>>('/api/v1/notifications/', { params })
+  return res.data
+}
+
+export async function markNotificationRead(id: string) {
+  await apiClient.post(`/api/v1/notifications/${id}/mark_as_read/`)
+}
+
+export async function markAllNotificationsRead() {
+  await apiClient.post('/api/v1/notifications/mark_all_as_read/')
+}
+
+export async function fetchPushTokens() {
+  const res = await apiClient.get<{ success: boolean; tokens: PushToken[]; count: number }>('/api/v1/push-tokens/')
+  return res.data
+}
+
 // Notifications unread count
 export async function fetchUnreadCount() {
   const res = await apiClient.get<{ count: number; results?: unknown[] }>('/api/v1/notifications/')
-  // API returns paginated list — use count field
   return res.data.count ?? 0
 }

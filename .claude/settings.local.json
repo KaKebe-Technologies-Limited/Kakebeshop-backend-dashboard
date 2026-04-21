@@ -16,7 +16,12 @@
       "Bash(python3 -c \" import sys, json data = json.load\\(sys.stdin\\) paths = data.get\\('paths', {}\\) for path in paths: if 'auth' in path.lower\\(\\) or 'token' in path.lower\\(\\) or 'login' in path.lower\\(\\): print\\(path\\) \")",
       "Bash(python3 -c \" import json,sys d=json.load\\(sys.stdin\\) for method,fields in d.get\\('actions',{}\\).items\\(\\): print\\(f'{method}:'\\) for f,info in fields.items\\(\\): print\\(f' {f}: type={info.get\\(\\\\\"type\\\\\"\\)} required={info.get\\(\\\\\"required\\\\\"\\)}'\\) \")",
       "Bash(python3 -c \" import json,sys d=json.load\\(sys.stdin\\) for l in d['results']: print\\('id:', l['id'], '| price:', l.get\\('price'\\), '| type:', l['price_type'], '| merchant:', l['merchant']['id']\\) \")",
-      "Bash(python3 -c \" import json,sys d=json.load\\(sys.stdin\\) for l in d['results']: p=l.get\\('price'\\) if p: print\\('id:', l['id'], '| price:', p, '| merchant:', l['merchant']['id']\\) break \")"
+      "Bash(python3 -c \" import json,sys d=json.load\\(sys.stdin\\) for l in d['results']: p=l.get\\('price'\\) if p: print\\('id:', l['id'], '| price:', p, '| merchant:', l['merchant']['id']\\) break \")",
+      "Bash(echo \"Exit: $?\")",
+      "Read(//tmp/**)",
+      "Bash(xargs grep *)",
+      "Bash(python3 *)",
+      "Bash(npx tsc *)"
     ]
   }
 }

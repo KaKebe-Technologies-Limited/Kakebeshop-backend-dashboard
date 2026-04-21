@@ -18,6 +18,9 @@ import UserRegistrationsPage from '@/pages/UserRegistrationsPage'
 import VisitorAnalyticsPage from '@/pages/VisitorAnalyticsPage'
 import RoleManagementPage from '@/pages/RoleManagementPage'
 import ImageLibraryPage from '@/pages/ImageLibraryPage'
+import ReviewsPage from '@/pages/ReviewsPage'
+import CartWishlistPage from '@/pages/CartWishlistPage'
+import NotificationsPage from '@/pages/NotificationsPage'
 import ComingSoonPage from '@/pages/ComingSoonPage'
 import { AppShell } from '@/components/layout/AppShell'
 import type { UserRole } from '@/stores/authStore'
@@ -54,7 +57,10 @@ export const dashboardRoutes: DashboardRoute[] = [
   { path: 'staff', element: <ComingSoonPage title="Staff Management" description="Staff management coming soon." />, roles: ['super_admin', 'admin'], label: 'Staff', comingSoon: true },
   { path: 'payouts', element: <ComingSoonPage title="Payouts" description="Payout management coming soon." />, roles: ['super_admin', 'admin'], label: 'Payouts', comingSoon: true },
   { path: 'coupons', element: <ComingSoonPage title="Coupons" description="Coupon management coming soon." />, roles: ['super_admin', 'admin'], label: 'Coupons', comingSoon: true },
-  { path: 'reviews', element: <ComingSoonPage title="Reviews" description="Review moderation coming soon." />, roles: ['super_admin', 'admin', 'moderator'], label: 'Reviews', comingSoon: true },
+  { path: 'cart-wishlist', element: <CartWishlistPage />, roles: ['super_admin', 'admin'], label: 'Cart & Wishlist' },
+  { path: 'notifications', element: <NotificationsPage />, roles: ['super_admin', 'admin'], label: 'Notifications' },
+  { path: 'notifications', element: <NotificationsPage />, roles: ['super_admin', 'admin'], label: 'Notifications' },
+  { path: 'reviews', element: <ReviewsPage />, roles: ['super_admin', 'admin', 'moderator'], label: 'Reviews' },
 ]
 
 function buildRoutes(routes: DashboardRoute[]): RouteObject[] {

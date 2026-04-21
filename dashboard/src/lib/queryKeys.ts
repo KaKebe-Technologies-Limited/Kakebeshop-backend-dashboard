@@ -49,17 +49,40 @@ export const queryKeys = {
   },
   notifications: {
     all: ['notifications'] as const,
+    list: (p: Record<string, unknown>) => ['notifications', 'list', p] as const,
     unreadCount: ['notifications', 'unread-count'] as const,
+  },
+  pushTokens: {
+    all: ['push-tokens'] as const,
+    list: () => ['push-tokens', 'list'] as const,
   },
   banners: {
     all: ['banners'] as const,
     list: (p: Record<string, unknown>) => ['banners', 'list', p] as const,
   },
   listingReviews: {
+    all: ['listing-reviews'] as const,
     list: (p: Record<string, unknown>) => ['listing-reviews', 'list', p] as const,
   },
   merchantReviews: {
+    all: ['merchant-reviews'] as const,
     list: (p: Record<string, unknown>) => ['merchant-reviews', 'list', p] as const,
+  },
+  merchantScores: {
+    all: ['merchant-scores'] as const,
+    list: (p: Record<string, unknown>) => ['merchant-scores', 'list', p] as const,
+  },
+  cartItems: {
+    all: ['cart-items'] as const,
+    list: (p: Record<string, unknown>) => ['cart-items', 'list', p] as const,
+  },
+  wishlists: {
+    all: ['wishlists'] as const,
+    list: (p: Record<string, unknown>) => ['wishlists', 'list', p] as const,
+  },
+  wishlistItems: {
+    all: ['wishlist-items'] as const,
+    list: (p: Record<string, unknown>) => ['wishlist-items', 'list', p] as const,
   },
   auditLogs: {
     list: (p: Record<string, unknown>) => ['audit-logs', 'list', p] as const,

@@ -256,12 +256,25 @@ export interface Notification {
   notification_type: NotificationType
   title: string
   message: string
+  user?: string
+  user_name?: string
   order_id: string | null
   merchant_id: string | null
   listing_id: string | null
   metadata: Record<string, unknown>
   is_read: boolean
   read_at: string | null
+  created_at: string
+}
+
+export interface PushToken {
+  id: string
+  user?: string
+  user_name?: string
+  token: string
+  device_type?: string
+  platform?: string
+  is_active?: boolean
   created_at: string
 }
 
@@ -283,10 +296,46 @@ export interface Banner {
   created_at: string
 }
 
+// ─── Cart & Wishlist ─────────────────────────────────────────────────────────
+export interface CartItem {
+  id: string
+  cart: string
+  cart_user?: string
+  listing: string
+  listing_title?: string
+  listing_image?: string | null
+  quantity: number
+  unit_price?: string | number | null
+  subtotal?: string | number | null
+  created_at: string
+  updated_at?: string
+}
+
+export interface Wishlist {
+  id: string
+  user?: string
+  user_name?: string
+  total_items: number
+  created_at: string
+  updated_at?: string
+}
+
+export interface WishlistItem {
+  id: string
+  wishlist: string
+  wishlist_user?: string
+  listing: string
+  listing_title?: string
+  listing_image?: string | null
+  added_at?: string
+  created_at?: string
+}
+
 // ─── Review ──────────────────────────────────────────────────────────────────
 export interface ListingReview {
   id: string
   listing: string
+  listing_title?: string
   rating: number
   comment: string | null
   user_name: string
@@ -297,11 +346,21 @@ export interface ListingReview {
 export interface MerchantReview {
   id: string
   merchant: string
+  merchant_name?: string
   rating: number
   comment: string | null
   user_name: string
   created_at: string
   updated_at: string
+}
+
+export interface MerchantScore {
+  id: string
+  merchant: string
+  merchant_name?: string
+  score: number
+  review_count?: number
+  updated_at?: string
 }
 
 // ─── Audit Log ───────────────────────────────────────────────────────────────
