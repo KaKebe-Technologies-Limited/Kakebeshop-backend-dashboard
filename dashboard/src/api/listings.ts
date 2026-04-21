@@ -63,3 +63,23 @@ export async function featureListing(id: string) {
   const res = await apiClient.post(`/api/v1/admin/listings/${id}/feature/`)
   return res.data
 }
+
+export interface CreateListingPayload {
+  merchant: string
+  title: string
+  description?: string
+  listing_type: 'PRODUCT' | 'SERVICE'
+  category: string
+  price_type: 'FIXED' | 'RANGE'
+  price?: string | null
+  price_min?: string | null
+  price_max?: string | null
+  currency?: string
+  is_price_negotiable?: boolean
+  status?: string
+}
+
+export async function createListing(payload: CreateListingPayload) {
+  const res = await apiClient.post<Listing>('/api/v1/admin/listings/', payload)
+  return res.data
+}
