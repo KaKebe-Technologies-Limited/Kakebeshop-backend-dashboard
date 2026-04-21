@@ -103,16 +103,29 @@ export function ListingDetailDialog({ listingId, open, onClose, categories }: Li
     const raw = listing as unknown as Record<string, unknown>
     setEditTitle(listing.title)
     setEditDescription(String(raw.description ?? ''))
-    setEditCategory(listing.category ?? '')
+    setEditCategory(typeof listing.category === 'object' && listing.category !== null
+      ? (listing.category as Record<string, string>).id ?? ''
+      : listing.category ?? '')
     setEditPriceType(listing.price_type ?? 'FIXED')
     setEditPrice(listing.price ?? '')
     setEditPriceMin(listing.price_min ?? '')
     setEditPriceMax(listing.price_max ?? '')
     setEditCurrency(listing.currency ?? 'UGX')
     setEditStatus(listing.status ?? '')
-    const imgs = Array.isArray(raw.images)
-      ? (raw.images as Array<{ image: string }>).map(i => i.image)
-      : listing.primary_image ? [listing.primary_image.image] : []
+    // Extract image URLs from the backend's nested image structure
+    const imgs = (() => {
+      if (!Array.isArray(raw.images) || !raw.images.length) {
+        return listing.primary_image ? [listing.primary_image.image] : []
+      }
+      const first = raw.images[0] as Record<string, unknown>
+      if (first.thumb || first.large) {
+        return (raw.images as Array<Record<string, unknown>>).map(img => {
+          const v = (img.large ?? img.thumb) as { image: string }
+          return v.image
+        })
+      }
+      return (raw.images as Array<{ image: string }>).map(i => i.image)
+    })()
     setEditImages(imgs)
     setEditing(true)
   }
@@ -157,8 +170,27 @@ export function ListingDetailDialog({ listingId, open, onClose, categories }: Li
   const allImages = (() => {
     if (!listing) return []
     const raw = listing as unknown as Record<string, unknown>
-    if (Array.isArray(raw.images)) return raw.images as Array<{ id: string; image: string; variant: string }>
-    if (listing.primary_image) return [{ id: listing.primary_image.id, image: listing.primary_image.image, variant: 'primary' }]
+    // Backend returns images as array of { image_group_id, thumb: { id, image }, large: { id, image } }
+    if (Array.isArray(raw.images) && raw.images.length > 0) {
+      const first = raw.images[0] as Record<string, unknown>
+      // New shape: { image_group_id, thumb, large }
+      if (first.thumb || first.large) {
+        return (raw.images as Array<Record<string, unknown>>).map(img => {
+          const variant = (img.large ?? img.thumb) as { id: string; image: string }
+          return {
+            id: String(img.image_group_id),
+            image: variant.image,
+            variant: img.large ? 'large' : 'thumb',
+          }
+        })
+      }
+      // Old flat shape: { id, image, variant }
+      return raw.images as Array<{ id: string; image: string; variant: string }>
+    }
+    // Fallback to primary_image from list response
+    if (listing.primary_image) {
+      return [{ id: listing.primary_image.id, image: listing.primary_image.image, variant: 'thumb' }]
+    }
     return []
   })()
 

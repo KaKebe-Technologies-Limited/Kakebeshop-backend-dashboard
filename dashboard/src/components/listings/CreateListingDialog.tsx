@@ -74,7 +74,16 @@ export function CreateListingDialog({ open, onClose, categories }: CreateListing
       toast({ title: 'Listing created', description: 'Listing created and set to Pending review.' })
       handleClose()
     } catch (e) {
-      const err = e as { response?: { data?: Record<string, unknown> } }
+      const err = e as { response?: { status?: number; data?: Record<string, unknown> } }
+      const status = err?.response?.status
+      if (status === 405) {
+        toast({
+          variant: 'destructive',
+          title: 'Not supported by backend',
+          description: 'The admin API does not support creating listings. Ask the backend developer to add POST support to /api/v1/admin/listings/.',
+        })
+        return
+      }
       const d = err?.response?.data
       const msg = d ? Object.entries(d).map(([k, v]) => `${k}: ${Array.isArray(v) ? v[0] : v}`).join(', ') : 'Create failed'
       toast({ variant: 'destructive', title: 'Create failed', description: msg })
@@ -84,6 +93,9 @@ export function CreateListingDialog({ open, onClose, categories }: CreateListing
   return (
     <Dialog open={open} onClose={handleClose} title="Create Listing" size="lg">
       <div className="p-6 space-y-4">
+        <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+          <strong>Note:</strong> Creating listings requires the backend developer to enable POST on <code>/api/v1/admin/listings/</code>. Currently only merchants can create listings via their portal.
+        </div>
         {/* Merchant */}
         <div>
           <Label>Merchant <span className="text-destructive">*</span></Label>
