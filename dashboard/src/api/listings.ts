@@ -21,8 +21,9 @@ export async function fetchListings(filters: ListingFilters = {}) {
 }
 
 export async function fetchListingById(id: string) {
-  const res = await apiClient.get<Listing>(`/api/v1/admin/listings/${id}/`)
-  return res.data
+  const res = await apiClient.get<{ success: boolean; data: Listing } | Listing>(`/api/v1/admin/listings/${id}/`)
+  const raw = res.data as any
+  return (raw.data ?? raw) as Listing
 }
 
 export interface UpdateListingPayload {

@@ -18,8 +18,9 @@ export async function fetchMerchants(filters: MerchantFilters = {}) {
 }
 
 export async function fetchMerchantById(id: string) {
-  const res = await apiClient.get<MerchantDetail>(`/api/v1/admin/merchants/${id}/`)
-  return res.data
+  const res = await apiClient.get<{ success: boolean; data: MerchantDetail } | MerchantDetail>(`/api/v1/admin/merchants/${id}/`)
+  const raw = res.data as any
+  return (raw.data ?? raw) as MerchantDetail
 }
 
 export async function updateMerchant(id: string, payload: Partial<MerchantDetail>) {
