@@ -5,7 +5,25 @@ import { ntfyService } from '@/services/ntfyService'
 import { useAuthStore } from '@/stores/authStore'
 import type { Order } from '@/types'
 
-const seenOrderIds = new Set<string>()
+const STORAGE_KEY = 'kakebe_notified_order_ids'
+const MAX_STORED = 200 // keep last 200 to avoid unbounded growth
+
+function loadNotifiedIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    return new Set(raw ? JSON.parse(raw) : [])
+  } catch { return new Set() }
+}
+
+function saveNotifiedIds(ids: Set<string>) {
+  try {
+    const arr = [...ids].slice(-MAX_STORED)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(arr))
+  } catch { /* ignore */ }
+}
+
+// In-memory set seeded from localStorage — persists across page refreshes
+const notifiedIds = loadNotifiedIds()
 
 export function OrderNotifier() {
   const access = useAuthStore(s => s.access)
@@ -23,31 +41,31 @@ export function OrderNotifier() {
   useEffect(() => {
     if (!data?.results) return
 
-    console.log('[OrderNotifier] Checking orders:', data.results.length, 'total')
-
     if (isFirstFetch.current) {
       isFirstFetch.current = false
-      const twoMinutesAgo = Date.now() - 2 * 60 * 1000
-
+      // On first load, seed ALL current orders so we don't spam on login
+      // But only seed orders older than 5 minutes — very recent ones still notify
+      const fiveMinutesAgo = Date.now() - 5 * 60 * 1000
       data.results.forEach((o: Order) => {
-        const orderAge = new Date(o.created_at).getTime()
-        if (orderAge < twoMinutesAgo) {
-          seenOrderIds.add(o.id)
+        if (new Date(o.created_at).getTime() < fiveMinutesAgo) {
+          notifiedIds.add(o.id)
         } else {
-          console.log('[OrderNotifier] Fresh order on load:', o.order_number, 'age:', Math.round((Date.now() - orderAge) / 1000), 'seconds')
+          console.log('[OrderNotifier] Recent order found on load:', o.order_number)
         }
       })
+      saveNotifiedIds(notifiedIds)
     }
 
     const newOrders = data.results.filter(
-      (o: Order) => o.status === 'NEW' && !seenOrderIds.has(o.id)
+      (o: Order) => o.status === 'NEW' && !notifiedIds.has(o.id)
     )
 
-    console.log('[OrderNotifier] New orders to notify:', newOrders.length)
+    console.log('[OrderNotifier] Polled', data.results.length, 'orders,', newOrders.length, 'new to notify')
 
     for (const order of newOrders) {
-      seenOrderIds.add(order.id)
-      console.log('[OrderNotifier] Sending ntfy for order:', order.order_number)
+      notifiedIds.add(order.id)
+      saveNotifiedIds(notifiedIds)
+      console.log('[OrderNotifier] Sending ntfy for:', order.order_number)
       void ntfyService.sendNotification(
         {
           title: '🛒 New Order — Kakebe Shop',

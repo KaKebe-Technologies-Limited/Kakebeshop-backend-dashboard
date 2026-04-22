@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { websocketService, useWebSocketConnection } from '@/services/websocketService'
+import { websocketService } from '@/services/websocketService'
 import { useAuthStore } from '@/stores/authStore'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -12,8 +12,14 @@ export function RealtimeProvider({ children }: RealtimeProviderProps) {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated)
   const hasConnected = useRef(false)
 
-  // Connect to WebSocket when authenticated
-  useWebSocketConnection()
+  // Only connect WebSocket when authenticated
+  useEffect(() => {
+    if (!isAuthenticated) return
+    websocketService.connect().catch(() => {
+      // WebSocket not available — polling handles real-time updates
+    })
+    return () => websocketService.disconnect()
+  }, [isAuthenticated])
 
   // Listen for real-time events
   useEffect(() => {
