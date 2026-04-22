@@ -24,10 +24,17 @@ export function OrderNotifier() {
     if (!data?.results) return
 
     if (isFirstFetch.current) {
-      // Seed existing orders — don't notify on first load
-      data.results.forEach((o: Order) => seenOrderIds.add(o.id))
       isFirstFetch.current = false
-      return
+      const twoMinutesAgo = Date.now() - 2 * 60 * 1000
+
+      data.results.forEach((o: Order) => {
+        const orderAge = new Date(o.created_at).getTime()
+        if (orderAge < twoMinutesAgo) {
+          // Old order — seed it so we don't notify
+          seenOrderIds.add(o.id)
+        }
+        // Orders newer than 2 minutes are NOT seeded — they will trigger notification below
+      })
     }
 
     const newOrders = data.results.filter(
@@ -42,7 +49,7 @@ export function OrderNotifier() {
           tags: ['shopping_cart', 'bell'],
           priority: 'high',
         },
-        `Order #${order.order_number}\nBuyer: ${order.buyer_name}\nMerchant: ${order.merchant_name}\nTotal: UGX ${order.total_amount}`
+        `Order #${order.order_number}\nBuyer: ${order.buyer_name}\nPhone: ${order.buyer_phone ?? 'N/A'}\nMerchant: ${order.merchant_name}\nTotal: UGX ${order.total_amount}`
       )
     }
   }, [data])
