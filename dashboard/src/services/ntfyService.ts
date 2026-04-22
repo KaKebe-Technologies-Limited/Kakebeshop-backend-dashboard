@@ -67,7 +67,7 @@ export const ntfyService = {
       const res = await fetch(`${NTFY_URL}/${NTFY_TOPIC}`, {
         method: 'POST',
         headers: {
-          'Title': options.title || 'Kakebe Notification',
+          'Title': (options.title || 'Kakebe Notification').replace(/[^\x00-\xFF]/g, ''),
           'Tags': options.tags?.join(',') || '',
           'Priority': options.priority || 'default',
           'Content-Type': 'text/plain'

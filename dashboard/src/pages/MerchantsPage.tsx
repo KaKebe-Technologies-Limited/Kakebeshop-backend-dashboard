@@ -28,9 +28,9 @@ import type { MerchantListItem } from '@/types'
 
 // Send ntfy alert to Kakebe-Shop-merchants when an action is taken
 async function notifyMerchantAction(action: string, merchantName: string, phone: string | null, email: string | null) {
-  const contact = [phone && `📞 ${phone}`, email && `✉️ ${email}`].filter(Boolean).join('\n')
+  const contact = [phone && `Phone: ${phone}`, email && `Email: ${email}`].filter(Boolean).join('\n')
   await ntfyService.sendNotification(
-    { title: `Merchant ${action} — Kakebe Shop`, tags: ['store', 'bell'], priority: 'default' },
+    { title: `Merchant ${action} - Kakebe Shop`, tags: ['store', 'bell'], priority: 'default' },
     `Merchant: ${merchantName}\n${contact}`
   )
 }

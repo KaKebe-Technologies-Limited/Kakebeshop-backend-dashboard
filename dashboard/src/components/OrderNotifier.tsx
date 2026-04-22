@@ -68,7 +68,7 @@ export function OrderNotifier() {
       console.log('[OrderNotifier] Sending ntfy for:', order.order_number)
       void ntfyService.sendNotification(
         {
-          title: '🛒 New Order — Kakebe Shop',
+          title: 'New Order - Kakebe Shop',
           tags: ['shopping_cart', 'bell'],
           priority: 'high',
         },
