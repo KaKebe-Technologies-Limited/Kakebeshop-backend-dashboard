@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Eye, ShieldCheck, Star, Trash2, Ban, PauseCircle } from 'lucide-react'
+import { Eye, ShieldCheck, Star, Trash2, Ban, PauseCircle, Phone, Mail } from 'lucide-react'
 import {
   useMerchants, useMerchantDetail,
   useVerifyMerchant, useUpdateMerchant, useDeleteMerchant,
@@ -23,7 +23,17 @@ import { StarRating } from '@/components/shared/StarRating'
 import { Card } from '@/components/ui/card'
 import { formatDate, formatDateTime } from '@/lib/utils'
 import { useToast } from '@/components/ui/use-toast'
+import { ntfyService } from '@/services/ntfyService'
 import type { MerchantListItem } from '@/types'
+
+// Send ntfy alert to Kakebe-Shop-merchants when an action is taken
+async function notifyMerchantAction(action: string, merchantName: string, phone: string | null, email: string | null) {
+  const contact = [phone && `📞 ${phone}`, email && `✉️ ${email}`].filter(Boolean).join('\n')
+  await ntfyService.sendNotification(
+    { title: `Merchant ${action} — Kakebe Shop`, tags: ['store', 'bell'], priority: 'default' },
+    `Merchant: ${merchantName}\n${contact}`
+  )
+}
 
 export default function MerchantsPage() {
   const [sp, setSp] = useSearchParams()
@@ -74,8 +84,26 @@ export default function MerchantsPage() {
 
   function handleConfirm() {
     if (!confirmAction) return
-    const { type, id } = confirmAction
-    const done = () => { setConfirmAction(null); setSelectedId(null) }
+    const { type, id, name } = confirmAction
+    const phone = detail?.business_phone ?? null
+    const email = detail?.business_email ?? detail?.user_email ?? null
+
+    const done = () => {
+      setConfirmAction(null)
+      setSelectedId(null)
+      // Send ntfy notification after action
+      const actionLabel = {
+        verify: 'Verified',
+        feature: 'Featured',
+        unfeature: 'Unfeatured',
+        suspend: 'Suspended',
+        ban: 'Banned',
+        delete: 'Deleted',
+      }[type]
+      void notifyMerchantAction(actionLabel, name, phone, email)
+      toast({ title: `Merchant ${actionLabel}` })
+    }
+
     if (type === 'verify') verifyMutation.mutate(id, { onSuccess: done })
     else if (type === 'feature') updateMutation.mutate({ id, payload: { featured: true } }, { onSuccess: done })
     else if (type === 'unfeature') updateMutation.mutate({ id, payload: { featured: false } }, { onSuccess: done })
@@ -107,11 +135,11 @@ export default function MerchantsPage() {
   }
 
   const actionLabels = {
-    verify: 'Verify this merchant?',
+    verify: 'Verify this merchant? A notification will be sent.',
     feature: 'Feature this merchant?',
     unfeature: 'Remove from featured?',
-    suspend: 'Suspend this merchant?',
-    ban: 'Ban this merchant?',
+    suspend: 'Suspend this merchant? A notification will be sent.',
+    ban: 'Ban this merchant? A notification will be sent.',
     delete: 'Delete this merchant? This cannot be undone.',
   }
 
@@ -255,14 +283,12 @@ export default function MerchantsPage() {
           </div>
         ) : detail ? (
           <div className="p-6 space-y-6">
-            {/* Cover image */}
             {detail.cover_image && (
               <div className="relative h-32 rounded-lg overflow-hidden bg-muted">
                 <img src={detail.cover_image} alt="cover" className="h-full w-full object-cover" />
               </div>
             )}
 
-            {/* Header */}
             <div className="flex gap-4 items-start">
               <MerchantAvatar logo={detail.logo} name={detail.display_name} size="lg" />
               <div className="flex-1 min-w-0">
@@ -275,6 +301,26 @@ export default function MerchantsPage() {
                 {detail.business_name && <p className="text-sm text-muted-foreground mt-0.5">{detail.business_name}</p>}
                 <StarRating rating={detail.rating} total={detail.total_reviews} />
               </div>
+            </div>
+
+            {/* Contact info — clickable */}
+            <div className="rounded-lg border border-border p-4 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contact</p>
+              {detail.business_phone && (
+                <a href={`tel:${detail.business_phone}`} className="flex items-center gap-2 text-sm text-primary hover:underline">
+                  <Phone className="h-4 w-4" /> {detail.business_phone}
+                </a>
+              )}
+              {detail.business_email && (
+                <a href={`mailto:${detail.business_email}`} className="flex items-center gap-2 text-sm text-primary hover:underline">
+                  <Mail className="h-4 w-4" /> {detail.business_email}
+                </a>
+              )}
+              {detail.user_email && (
+                <a href={`mailto:${detail.user_email}`} className="flex items-center gap-2 text-sm text-muted-foreground hover:underline">
+                  <Mail className="h-4 w-4" /> {detail.user_email} <span className="text-xs">(account)</span>
+                </a>
+              )}
             </div>
 
             {/* Actions */}
@@ -297,23 +343,18 @@ export default function MerchantsPage() {
                   <Ban className="h-4 w-4 mr-1" /> Ban
                 </Button>
               )}
-              <Button size="sm" variant="outline" onClick={openImageEdit}>
-                Update Images
-              </Button>
+              <Button size="sm" variant="outline" onClick={openImageEdit}>Update Images</Button>
               <Button size="sm" variant="destructive" onClick={() => setConfirmAction({ type: 'delete', id: detail.id, name: detail.display_name })}>
                 <Trash2 className="h-4 w-4 mr-1" /> Delete
               </Button>
             </div>
 
-            {/* Info grid */}
             <div className="grid grid-cols-2 gap-4 text-sm">
               {[
-                { label: 'User Email', value: detail.user_email },
-                { label: 'Business Email', value: detail.business_email ?? '—' },
-                { label: 'Phone', value: detail.business_phone ?? '—' },
                 { label: 'User', value: detail.user_name },
                 { label: 'Verified On', value: formatDate(detail.verification_date) },
                 { label: 'Created', value: formatDateTime(detail.created_at) },
+                { label: 'Updated', value: formatDateTime(detail.updated_at) },
               ].map(({ label, value }) => (
                 <div key={label}>
                   <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
