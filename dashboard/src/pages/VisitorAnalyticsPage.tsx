@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchVisitorAnalytics, fetchRealtimeVisitors, trackVisitorActivity } from '@/api/visitorTracking'
-import { ntfyService } from '@/services/ntfyService'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -61,13 +60,7 @@ export default function VisitorAnalyticsPage() {
       product_id: null,
       timestamp: new Date().toISOString()
     }
-
     trackVisitorActivity(sessionId, pageView)
-
-    if (!ntfyService.isBot(navigator.userAgent)) {
-      void ntfyService.notifyPageView(pageView.page_url, navigator.userAgent)
-    }
-
     setCurrentPage(window.location.pathname)
   }, [sessionId])
 
@@ -490,8 +483,8 @@ export default function VisitorAnalyticsPage() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Is Bot</p>
-              <Badge variant={ntfyService.isBot(navigator.userAgent) ? 'destructive' : 'default'} className="mt-1">
-                {ntfyService.isBot(navigator.userAgent) ? 'Yes' : 'No'}
+              <Badge variant={navigator.userAgent.toLowerCase().includes('bot') ? 'destructive' : 'default'} className="mt-1">
+                {navigator.userAgent.toLowerCase().includes('bot') ? 'Yes' : 'No'}
               </Badge>
             </div>
           </div>

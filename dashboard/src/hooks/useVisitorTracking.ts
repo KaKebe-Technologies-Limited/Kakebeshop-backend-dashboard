@@ -1,6 +1,5 @@
 import { useEffect, useCallback } from 'react'
 import { trackVisitorActivity } from '@/api/visitorTracking'
-import { ntfyService } from '@/services/ntfyService'
 
 export function useVisitorTracking() {
   // Generate or retrieve session ID
@@ -22,18 +21,13 @@ export function useVisitorTracking() {
       product_id: null,
       timestamp: new Date().toISOString()
     }
-
     try {
       await trackVisitorActivity(sessionId, pageView)
-      if (!ntfyService.isBot(navigator.userAgent)) {
-        void ntfyService.notifyPageView(pageView.page_url, navigator.userAgent)
-      }
     } catch (error) {
       console.error('Failed to track page view:', error)
     }
   }, [getSessionId])
 
-  // Track product view
   const trackProductView = useCallback(async (productId: string, productTitle: string) => {
     const sessionId = getSessionId()
     const pageView = {
@@ -42,12 +36,8 @@ export function useVisitorTracking() {
       product_id: productId,
       timestamp: new Date().toISOString()
     }
-
     try {
       await trackVisitorActivity(sessionId, pageView)
-      if (!ntfyService.isBot(navigator.userAgent)) {
-        void ntfyService.notifyProductViewed(productTitle, window.location.href, navigator.userAgent)
-      }
     } catch (error) {
       console.error('Failed to track product view:', error)
     }
