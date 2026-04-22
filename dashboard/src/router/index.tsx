@@ -4,6 +4,7 @@ import { RoleGuard } from '@/components/layout/RoleGuard'
 import LoginPage from '@/pages/LoginPage'
 import OverviewPage from '@/pages/OverviewPage'
 import OrdersPage from '@/pages/OrdersPage'
+import LiveOrdersPage from '@/pages/LiveOrdersPage'
 import MerchantsPage from '@/pages/MerchantsPage'
 import ListingsPage from '@/pages/ListingsPage'
 import CategoriesPage from '@/pages/CategoriesPage'
@@ -30,12 +31,12 @@ interface DashboardRoute {
   element: React.ReactNode
   roles?: UserRole[]
   label: string
-  icon?: string
   comingSoon?: boolean
 }
 
 export const dashboardRoutes: DashboardRoute[] = [
   { path: '', element: <OverviewPage />, roles: ['super_admin', 'admin', 'moderator', 'support'], label: 'Overview' },
+  { path: 'live-orders', element: <LiveOrdersPage />, roles: ['super_admin', 'admin', 'moderator'], label: 'Live Orders' },
   { path: 'orders', element: <OrdersPage />, roles: ['super_admin', 'admin', 'moderator'], label: 'Orders' },
   { path: 'merchants', element: <MerchantsPage />, roles: ['super_admin', 'admin', 'moderator'], label: 'Merchants' },
   { path: 'listings', element: <ListingsPage />, roles: ['super_admin', 'admin', 'moderator'], label: 'Listings' },
@@ -51,16 +52,15 @@ export const dashboardRoutes: DashboardRoute[] = [
   { path: 'user-registrations', element: <UserRegistrationsPage />, roles: ['super_admin', 'admin'], label: 'User Management' },
   { path: 'visitor-analytics', element: <VisitorAnalyticsPage />, roles: ['super_admin', 'admin'], label: 'Visitor Analytics' },
   { path: 'role-management', element: <RoleManagementPage />, roles: ['super_admin', 'admin'], label: 'Role Management' },
+  { path: 'reviews', element: <ReviewsPage />, roles: ['super_admin', 'admin', 'moderator'], label: 'Reviews' },
+  { path: 'cart-wishlist', element: <CartWishlistPage />, roles: ['super_admin', 'admin'], label: 'Cart & Wishlist' },
+  { path: 'notifications', element: <NotificationsPage />, roles: ['super_admin', 'admin'], label: 'Notifications' },
   { path: 'settings', element: <ComingSoonPage title="Settings" description="Dashboard settings coming soon." />, roles: ['super_admin', 'admin'], label: 'Settings', comingSoon: true },
   { path: 'help', element: <ComingSoonPage title="Help & Support" description="Help center coming soon." />, roles: ['super_admin', 'admin', 'moderator', 'support'], label: 'Help', comingSoon: true },
   { path: 'customers', element: <ComingSoonPage title="Customers" description="Customer management coming soon." />, roles: ['super_admin', 'admin', 'moderator'], label: 'Customers', comingSoon: true },
   { path: 'staff', element: <ComingSoonPage title="Staff Management" description="Staff management coming soon." />, roles: ['super_admin', 'admin'], label: 'Staff', comingSoon: true },
   { path: 'payouts', element: <ComingSoonPage title="Payouts" description="Payout management coming soon." />, roles: ['super_admin', 'admin'], label: 'Payouts', comingSoon: true },
   { path: 'coupons', element: <ComingSoonPage title="Coupons" description="Coupon management coming soon." />, roles: ['super_admin', 'admin'], label: 'Coupons', comingSoon: true },
-  { path: 'cart-wishlist', element: <CartWishlistPage />, roles: ['super_admin', 'admin'], label: 'Cart & Wishlist' },
-  { path: 'notifications', element: <NotificationsPage />, roles: ['super_admin', 'admin'], label: 'Notifications' },
-  { path: 'notifications', element: <NotificationsPage />, roles: ['super_admin', 'admin'], label: 'Notifications' },
-  { path: 'reviews', element: <ReviewsPage />, roles: ['super_admin', 'admin', 'moderator'], label: 'Reviews' },
 ]
 
 function buildRoutes(routes: DashboardRoute[]): RouteObject[] {

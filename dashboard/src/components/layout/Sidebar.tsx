@@ -3,13 +3,14 @@ import {
   LayoutDashboard, Store, ListChecks, Tag, FolderTree,
   ShoppingBag, BarChart3, Flag, CreditCard, Image, MessageSquare,
   ScrollText, ChevronLeft, ChevronRight, Users, UserCog,
-  Banknote, Ticket, Star, Settings, Shield, Images, ShoppingCart, Bell,
+  Banknote, Ticket, Star, Settings, Shield, Images, ShoppingCart, Bell, Radio,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { dashboardRoutes } from '@/router'
 
 const iconMap: Record<string, React.ElementType> = {
   '': LayoutDashboard,
+  'live-orders': Radio,
   'orders': ShoppingBag,
   'merchants': Store,
   'listings': ListChecks,
@@ -41,7 +42,7 @@ const navSections = [
   { label: 'Catalog', paths: ['merchants', 'listings', 'categories', 'tags'] },
   { label: 'Media', paths: ['image-library', 'banners'] },
   { label: 'Users', paths: ['customers', 'staff', 'user-registrations', 'role-management'] },
-  { label: 'Commerce', paths: ['orders', 'transactions', 'payouts', 'coupons', 'cart-wishlist'] },
+  { label: 'Commerce', paths: ['live-orders', 'orders', 'transactions', 'payouts', 'coupons', 'cart-wishlist'] },
   { label: 'Trust & Safety', paths: ['reviews', 'reports'] },
   { label: 'Content', paths: ['conversations', 'notifications'] },
   { label: 'Insights', paths: ['analytics', 'visitor-analytics', 'audit-logs'] },
@@ -92,6 +93,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 const Icon = iconMap[path] ?? LayoutDashboard
                 const to = path === '' ? '/' : `/${path}`
                 const isEnd = path === ''
+                const isLive = path === 'live-orders'
 
                 return (
                   <NavLink
@@ -105,11 +107,13 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                         collapsed ? 'justify-center px-2' : '',
                         isActive
                           ? 'bg-primary/10 text-primary font-medium'
-                          : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+                          : isLive
+                            ? 'text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 font-medium'
+                            : 'text-muted-foreground hover:bg-accent hover:text-foreground',
                       )
                     }
                   >
-                    <Icon className="h-4 w-4 flex-shrink-0" />
+                    <Icon className={cn('h-4 w-4 flex-shrink-0', isLive && 'animate-pulse')} />
                     {!collapsed && (
                       <>
                         <span className="truncate">{label}</span>

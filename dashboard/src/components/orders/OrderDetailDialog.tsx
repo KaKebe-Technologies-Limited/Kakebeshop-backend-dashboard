@@ -6,6 +6,7 @@ import { formatUGX, formatDateTime } from '@/lib/utils'
 import { queryKeys } from '@/lib/queryKeys'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { Phone, Mail, MapPin } from 'lucide-react'
 import type { OrderStatus } from '@/types'
 
 interface OrderDetailDialogProps {
@@ -65,48 +66,69 @@ export function OrderDetailDialog({ orderId, open, onClose }: OrderDetailDialogP
   }
 
   const canConfirm = order.status === 'NEW' || order.status === 'CONTACTED'
+  const canComplete = order.status === 'CONFIRMED'
   const canCancel = order.status !== 'CANCELLED' && order.status !== 'COMPLETED'
 
   return (
     <>
       <Dialog open={open} onClose={onClose} title={`Order ${order.order_number}`} size="lg">
-        <div className="space-y-6 p-6">
+        <div className="space-y-5 p-6">
+          {/* Status + date */}
           <div className="flex items-center justify-between">
             <OrderStatusBadge status={order.status} />
             <span className="text-xs text-muted-foreground">{formatDateTime(order.created_at)}</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {/* Buyer + Merchant */}
+          <div className="grid grid-cols-2 gap-4 rounded-lg border border-border p-4">
             <div>
-              <p className="text-xs font-medium text-muted-foreground mb-1">Buyer</p>
-              <p className="text-sm font-medium">{order.buyer_name}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Buyer</p>
+              <p className="text-sm font-semibold">{order.buyer_name}</p>
+              {order.buyer_email && (
+                <a href={`mailto:${order.buyer_email}`} className="flex items-center gap-1 text-xs text-primary mt-1 hover:underline">
+                  <Mail className="h-3 w-3" /> {order.buyer_email}
+                </a>
+              )}
+              {order.buyer_phone && (
+                <a href={`tel:${order.buyer_phone}`} className="flex items-center gap-1 text-xs text-primary mt-1 hover:underline">
+                  <Phone className="h-3 w-3" /> {order.buyer_phone}
+                </a>
+              )}
             </div>
             <div>
-              <p className="text-xs font-medium text-muted-foreground mb-1">Merchant</p>
-              <p className="text-sm font-medium">{order.merchant_name}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Merchant</p>
+              <p className="text-sm font-semibold">{order.merchant_name}</p>
             </div>
           </div>
 
+          {/* Delivery address */}
           {order.address && (
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-1">Delivery Address</p>
-              <p className="text-sm">
-                {order.address.address_line1}
-                {order.address.address_line2 && `, ${order.address.address_line2}`}
+            <div className="rounded-lg border border-border p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1">
+                <MapPin className="h-3 w-3" /> Delivery Address
               </p>
-              <p className="text-sm text-muted-foreground">
-                {order.address.area}, {order.address.district}, {order.address.region}
-              </p>
+              <p className="text-sm">{order.address.address_line1}{order.address.address_line2 && `, ${order.address.address_line2}`}</p>
+              <p className="text-sm text-muted-foreground">{order.address.area}, {order.address.district}, {order.address.region}</p>
             </div>
           )}
 
+          {/* Notes */}
           {order.notes && (
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-1">Notes</p>
-              <p className="text-sm">{order.notes}</p>
+              <p className="text-sm bg-muted/50 rounded-lg p-3">{order.notes}</p>
             </div>
           )}
 
+          {/* Cancellation reason */}
+          {order.cancellation_reason && (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Cancellation Reason</p>
+              <p className="text-sm bg-destructive/10 text-destructive rounded-lg p-3">{order.cancellation_reason}</p>
+            </div>
+          )}
+
+          {/* Items */}
           <div>
             <p className="text-xs font-medium text-muted-foreground mb-2">Items</p>
             <div className="border border-border rounded-lg overflow-hidden">
@@ -133,14 +155,11 @@ export function OrderDetailDialog({ orderId, open, onClose }: OrderDetailDialogP
             </div>
           </div>
 
-          <div className="flex justify-between items-center pt-4 border-t border-border">
-            <div>
-              {order.delivery_fee && (
-                <p className="text-sm text-muted-foreground">Delivery: {formatUGX(order.delivery_fee)}</p>
-              )}
-              {order.expected_delivery_date && (
-                <p className="text-xs text-muted-foreground">Expected: {order.expected_delivery_date}</p>
-              )}
+          {/* Totals */}
+          <div className="flex justify-between items-end pt-2 border-t border-border">
+            <div className="space-y-1">
+              {order.delivery_fee && <p className="text-sm text-muted-foreground">Delivery: {formatUGX(order.delivery_fee)}</p>}
+              {order.expected_delivery_date && <p className="text-xs text-muted-foreground">Expected: {order.expected_delivery_date}</p>}
             </div>
             <div className="text-right">
               <p className="text-xs text-muted-foreground">Total</p>
@@ -148,50 +167,36 @@ export function OrderDetailDialog({ orderId, open, onClose }: OrderDetailDialogP
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4 border-t border-border">
+          {/* Actions */}
+          <div className="flex gap-3 pt-2 border-t border-border">
             {canConfirm && (
-              <Button
-                onClick={() => handleStatusChange('CONFIRMED')}
-                disabled={mutation.isPending}
-                className="flex-1"
-              >
+              <Button onClick={() => handleStatusChange('CONFIRMED')} disabled={mutation.isPending} className="flex-1">
                 {mutation.isPending ? 'Updating...' : 'Confirm Order'}
               </Button>
             )}
+            {canComplete && (
+              <Button onClick={() => handleStatusChange('COMPLETED')} disabled={mutation.isPending} className="flex-1">
+                {mutation.isPending ? 'Updating...' : 'Mark Completed'}
+              </Button>
+            )}
             {canCancel && (
-              <Button
-                variant="destructive"
-                onClick={() => handleStatusChange('CANCELLED')}
-                disabled={mutation.isPending}
-                className="flex-1"
-              >
+              <Button variant="destructive" onClick={() => handleStatusChange('CANCELLED')} disabled={mutation.isPending} className="flex-1">
                 {mutation.isPending ? 'Updating...' : 'Cancel Order'}
               </Button>
             )}
-            <Button variant="outline" onClick={onClose} className="flex-1">
-              Close
-            </Button>
+            <Button variant="outline" onClick={onClose} className="flex-1">Close</Button>
           </div>
         </div>
       </Dialog>
 
-      <Dialog
-        open={showConfirm}
-        onClose={() => setShowConfirm(false)}
-        title="Confirm Status Change"
-        size="sm"
-      >
+      <Dialog open={showConfirm} onClose={() => setShowConfirm(false)} title="Confirm Status Change" size="sm">
         <div className="p-6 space-y-4">
-          <p className="text-sm">
-            Are you sure you want to change the order status to <strong>{pendingStatus}</strong>?
-          </p>
+          <p className="text-sm">Change order status to <strong>{pendingStatus}</strong>?</p>
           <div className="flex gap-3">
             <Button onClick={confirmStatusChange} disabled={mutation.isPending} className="flex-1">
               {mutation.isPending ? 'Updating...' : 'Confirm'}
             </Button>
-            <Button variant="outline" onClick={() => setShowConfirm(false)} className="flex-1">
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setShowConfirm(false)} className="flex-1">Cancel</Button>
           </div>
         </div>
       </Dialog>
