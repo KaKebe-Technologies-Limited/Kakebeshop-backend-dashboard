@@ -3,10 +3,33 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
 import { logout } from '@/api/auth'
 import { useUnreadCount } from '@/hooks/useReports'
-import { RealtimeIndicator } from '@/components/RealtimeProvider'
 import { Button } from '@/components/ui/button'
+import { useEffect, useState } from 'react'
 
 interface TopbarProps { title: string }
+
+function OnlineIndicator() {
+  const [online, setOnline] = useState(navigator.onLine)
+
+  useEffect(() => {
+    const on = () => setOnline(true)
+    const off = () => setOnline(false)
+    window.addEventListener('online', on)
+    window.addEventListener('offline', off)
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off) }
+  }, [])
+
+  return (
+    <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border ${
+      online
+        ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800'
+        : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800'
+    }`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${online ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+      {online ? 'Online' : 'Offline'}
+    </div>
+  )
+}
 
 export function Topbar({ title }: TopbarProps) {
   const navigate = useNavigate()
@@ -28,7 +51,7 @@ export function Topbar({ title }: TopbarProps) {
       <div className="flex items-center gap-2">
         {isAuthenticated && (
           <>
-            <RealtimeIndicator />
+            <OnlineIndicator />
             <button className="relative rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
               <Bell className="h-4 w-4" />
               {unreadCount > 0 && (
