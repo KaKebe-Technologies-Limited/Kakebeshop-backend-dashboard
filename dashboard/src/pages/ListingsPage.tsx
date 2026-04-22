@@ -30,6 +30,7 @@ export default function ListingsPage() {
   const category = sp.get('category') ?? ''
 
   const [detailId, setDetailId] = useState<string | null>(null)
+  const [detailPrimaryImage, setDetailPrimaryImage] = useState<{ id: string; image: string; variant: string } | null>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [quickAction, setQuickAction] = useState<{ type: 'approve' | 'reject' | 'feature' | 'delete'; listing: Listing } | null>(null)
   const [rejectReason, setRejectReason] = useState('')
@@ -128,7 +129,7 @@ export default function ListingsPage() {
                   <TableRow
                     key={l.id}
                     className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => setDetailId(l.id)}
+                    onClick={() => { setDetailId(l.id); setDetailPrimaryImage(l.primary_image ?? null) }}
                   >
                     <TableCell>
                       {l.primary_image
@@ -186,8 +187,9 @@ export default function ListingsPage() {
       <ListingDetailDialog
         listingId={detailId}
         open={!!detailId}
-        onClose={() => setDetailId(null)}
+        onClose={() => { setDetailId(null); setDetailPrimaryImage(null) }}
         categories={catData?.results ?? []}
+        primaryImage={detailPrimaryImage}
       />
 
       {/* Create Dialog */}

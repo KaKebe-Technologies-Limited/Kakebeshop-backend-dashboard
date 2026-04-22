@@ -19,6 +19,7 @@ interface ListingDetailDialogProps {
   open: boolean
   onClose: () => void
   categories: Category[]
+  primaryImage?: { id: string; image: string; variant: string } | null
 }
 
 function ImageGallery({ images }: { images: Array<{ id: string; image: string; variant?: string }> }) {
@@ -73,7 +74,7 @@ function ImageGallery({ images }: { images: Array<{ id: string; image: string; v
   )
 }
 
-export function ListingDetailDialog({ listingId, open, onClose, categories }: ListingDetailDialogProps) {
+export function ListingDetailDialog({ listingId, open, onClose, categories, primaryImage }: ListingDetailDialogProps) {
   const { data: listing, isLoading } = useListingDetail(listingId)
   const {
     updateListing, approveListing, rejectListing, featureListing, deleteListing,
@@ -115,7 +116,9 @@ export function ListingDetailDialog({ listingId, open, onClose, categories }: Li
     // Extract image URLs from the backend's nested image structure
     const imgs = (() => {
       if (!Array.isArray(raw.images) || !raw.images.length) {
-        return listing.primary_image ? [listing.primary_image.image] : []
+        if (listing.primary_image) return [listing.primary_image.image]
+        if (primaryImage) return [primaryImage.image]
+        return []
       }
       const first = raw.images[0] as Record<string, unknown>
       if (first.thumb || first.large) {
@@ -168,28 +171,29 @@ export function ListingDetailDialog({ listingId, open, onClose, categories }: Li
   }
 
   const allImages = (() => {
-    if (!listing) return []
+    if (!listing) {
+      // While detail is loading, show the primary_image from the list
+      if (primaryImage) return [{ id: primaryImage.id, image: primaryImage.image, variant: primaryImage.variant }]
+      return []
+    }
     const raw = listing as unknown as Record<string, unknown>
     // Backend returns images as array of { image_group_id, thumb: { id, image }, large: { id, image } }
     if (Array.isArray(raw.images) && raw.images.length > 0) {
       const first = raw.images[0] as Record<string, unknown>
-      // New shape: { image_group_id, thumb, large }
       if (first.thumb || first.large) {
         return (raw.images as Array<Record<string, unknown>>).map(img => {
           const variant = (img.large ?? img.thumb) as { id: string; image: string }
-          return {
-            id: String(img.image_group_id),
-            image: variant.image,
-            variant: img.large ? 'large' : 'thumb',
-          }
+          return { id: String(img.image_group_id), image: variant.image, variant: img.large ? 'large' : 'thumb' }
         })
       }
-      // Old flat shape: { id, image, variant }
       return raw.images as Array<{ id: string; image: string; variant: string }>
     }
-    // Fallback to primary_image from list response
+    // Admin detail doesn't include images — use primary_image from list item
     if (listing.primary_image) {
       return [{ id: listing.primary_image.id, image: listing.primary_image.image, variant: 'thumb' }]
+    }
+    if (primaryImage) {
+      return [{ id: primaryImage.id, image: primaryImage.image, variant: primaryImage.variant }]
     }
     return []
   })()
