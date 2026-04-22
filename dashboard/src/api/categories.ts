@@ -79,3 +79,8 @@ export async function toggleCategoryActive(id: string) {
   const res = await apiClient.post(`/api/v1/admin/categories/${id}/toggle-active/`)
   return res.data
 }
+
+export async function updateCategoryFields(id: string, payload: Partial<CreateCategoryPayload>) {
+  const res = await apiClient.patch<Category>(`/api/v1/admin/categories/${id}/`, payload)
+  return res.data
+}

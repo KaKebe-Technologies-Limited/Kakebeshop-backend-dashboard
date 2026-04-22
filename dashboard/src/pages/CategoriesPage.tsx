@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useCategories, useCategoryMutations } from '@/hooks/useCategories'
-import { ChevronRight, ChevronDown, FolderOpen, Folder, Plus, Pencil, Trash2 } from 'lucide-react'
+import { ChevronRight, ChevronDown, FolderOpen, Folder, Plus, Pencil, Trash2, Power } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import { Dialog } from '@/components/ui/dialog'
 import { CloudinaryUploader } from '@/components/shared/CloudinaryUploader'
 import { useToast } from '@/components/ui/use-toast'
@@ -15,10 +16,7 @@ import { formatDate } from '@/lib/utils'
 import type { CategoryTreeNode } from '@/types'
 
 function TreeNode({ node, depth = 0, selectedId, onSelect }: {
-  node: CategoryTreeNode
-  depth?: number
-  selectedId: string | null
-  onSelect: (n: CategoryTreeNode) => void
+  node: CategoryTreeNode; depth?: number; selectedId: string | null; onSelect: (n: CategoryTreeNode) => void
 }) {
   const [open, setOpen] = useState(depth === 0)
   const hasChildren = node.children.length > 0
@@ -61,7 +59,7 @@ function filterActiveNodes(nodes: CategoryTreeNode[]): CategoryTreeNode[] {
 
 export default function CategoriesPage() {
   const { data: catData, isLoading, refetch } = useCategories({ page: 1 })
-  const { createCategory, updateCategory, deleteCategory } = useCategoryMutations()
+  const { createCategory, updateCategory, deleteCategory, toggleCategoryActive, isToggling } = useCategoryMutations()
   const { toast } = useToast()
 
   const [selected, setSelected] = useState<CategoryTreeNode | null>(null)
@@ -71,11 +69,18 @@ export default function CategoriesPage() {
 
   const [newCategoryName, setNewCategoryName] = useState('')
   const [newCategoryIcon, setNewCategoryIcon] = useState('')
+  const [newCategoryDescription, setNewCategoryDescription] = useState('')
   const [createType, setCreateType] = useState<'parent' | 'child'>('parent')
   const [createParentId, setCreateParentId] = useState('')
 
   const [editCategoryName, setEditCategoryName] = useState('')
   const [editCategoryIcon, setEditCategoryIcon] = useState('')
+  const [editCategoryDescription, setEditCategoryDescription] = useState('')
+  const [editIsFeatured, setEditIsFeatured] = useState(false)
+  const [editAllowsCart, setEditAllowsCart] = useState(false)
+  const [editAllowsOrderIntent, setEditAllowsOrderIntent] = useState(false)
+  const [editIsContactOnly, setEditIsContactOnly] = useState(false)
+  const [editSortOrder, setEditSortOrder] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const rawTreeNodes = useMemo(() => {
@@ -105,7 +110,7 @@ export default function CategoriesPage() {
     return 'Request failed.'
   }
 
-  const resetCreateForm = () => { setNewCategoryName(''); setNewCategoryIcon(''); setCreateType('parent'); setCreateParentId('') }
+  const resetCreateForm = () => { setNewCategoryName(''); setNewCategoryIcon(''); setNewCategoryDescription(''); setCreateType('parent'); setCreateParentId('') }
   const closeCreateDialog = () => { setShowCreateDialog(false); resetCreateForm() }
 
   const handleCreateCategory = async () => {
@@ -113,12 +118,12 @@ export default function CategoriesPage() {
     if (createType === 'child' && !createParentId) return
     setIsSubmitting(true)
     try {
-      const payload = {
+      await createCategory({
         name: newCategoryName.trim(),
         ...(newCategoryIcon && { icon: newCategoryIcon }),
+        ...(newCategoryDescription && { description: newCategoryDescription }),
         ...(createType === 'child' && { parent: createParentId }),
-      }
-      await createCategory(payload)
+      })
       toast({ title: 'Category created' })
       closeCreateDialog()
       refetch()
@@ -133,6 +138,12 @@ export default function CategoriesPage() {
     if (!selected) return
     setEditCategoryName(selected.name)
     setEditCategoryIcon(selected.icon ?? '')
+    setEditCategoryDescription(selected.description ?? '')
+    setEditIsFeatured(selected.is_featured)
+    setEditAllowsCart(selected.allows_cart)
+    setEditAllowsOrderIntent(selected.allows_order_intent)
+    setEditIsContactOnly(selected.is_contact_only)
+    setEditSortOrder(selected.sort_order)
     setShowEditDialog(true)
   }
 
@@ -140,7 +151,19 @@ export default function CategoriesPage() {
     if (!selected || !editCategoryName.trim()) return
     setIsSubmitting(true)
     try {
-      await updateCategory({ id: selected.id, data: { name: editCategoryName.trim(), icon: editCategoryIcon || undefined } })
+      await updateCategory({
+        id: selected.id,
+        data: {
+          name: editCategoryName.trim(),
+          icon: editCategoryIcon || undefined,
+          description: editCategoryDescription || null,
+          is_featured: editIsFeatured,
+          allows_cart: editAllowsCart,
+          allows_order_intent: editAllowsOrderIntent,
+          is_contact_only: editIsContactOnly,
+          sort_order: editSortOrder,
+        },
+      })
       toast({ title: 'Category updated' })
       setShowEditDialog(false)
       refetch()
@@ -164,6 +187,17 @@ export default function CategoriesPage() {
       toast({ variant: 'destructive', title: 'Delete failed', description: getErrorMessage(e) })
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleToggleActive = async () => {
+    if (!selected) return
+    try {
+      await toggleCategoryActive(selected.id)
+      toast({ title: selected.is_active ? 'Category deactivated' : 'Category activated' })
+      refetch()
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Toggle failed', description: getErrorMessage(e) })
     }
   }
 
@@ -203,6 +237,9 @@ export default function CategoriesPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button size="sm" variant="outline" onClick={handleToggleActive} disabled={isToggling}>
+                    <Power className="h-4 w-4 mr-1" /> {selected.is_active ? 'Deactivate' : 'Activate'}
+                  </Button>
                   <Button size="sm" variant="outline" onClick={openEditDialog}><Pencil className="h-4 w-4 mr-1" /> Edit</Button>
                   <Button size="sm" variant="destructive" onClick={() => setShowDeleteDialog(true)}><Trash2 className="h-4 w-4 mr-1" /> Delete</Button>
                 </div>
@@ -222,6 +259,7 @@ export default function CategoriesPage() {
                   { label: 'Slug', value: selected.slug },
                   { label: 'Sort Order', value: String(selected.sort_order) },
                   { label: 'Child Categories', value: String(selected.children_count) },
+                  { label: 'Listings', value: String((selected as unknown as Record<string, number>).listings_count ?? 0) },
                   { label: 'Created', value: formatDate(selected.created_at) },
                   { label: 'Updated', value: formatDate(selected.updated_at) },
                 ].map(({ label, value }) => (
@@ -247,8 +285,12 @@ export default function CategoriesPage() {
         <div className="p-6 space-y-4">
           <h2 className="text-lg font-semibold">Create Category</h2>
           <div>
-            <Label htmlFor="name">Category Name</Label>
-            <Input id="name" value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} placeholder="e.g., Electronics" className="mt-1" />
+            <Label>Category Name</Label>
+            <Input value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} placeholder="e.g., Electronics" className="mt-1" />
+          </div>
+          <div>
+            <Label>Description</Label>
+            <Textarea value={newCategoryDescription} onChange={e => setNewCategoryDescription(e.target.value)} className="mt-1" rows={2} />
           </div>
           <div>
             <Label>Icon</Label>
@@ -259,16 +301,16 @@ export default function CategoriesPage() {
             {newCategoryIcon && <img src={newCategoryIcon} alt="icon preview" className="mt-2 h-12 w-12 rounded-lg object-cover border border-border" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />}
           </div>
           <div>
-            <Label htmlFor="category-type">Category Type</Label>
-            <Select id="category-type" value={createType} onChange={e => { const v = e.target.value as 'parent' | 'child'; setCreateType(v); if (v === 'parent') setCreateParentId('') }} className="mt-1">
+            <Label>Category Type</Label>
+            <Select value={createType} onChange={e => { const v = e.target.value as 'parent' | 'child'; setCreateType(v); if (v === 'parent') setCreateParentId('') }} className="mt-1">
               <option value="parent">Parent category</option>
               <option value="child">Child category</option>
             </Select>
           </div>
           {createType === 'child' && (
             <div>
-              <Label htmlFor="parent-category">Parent Category</Label>
-              <Select id="parent-category" value={createParentId} onChange={e => setCreateParentId(e.target.value)} className="mt-1">
+              <Label>Parent Category</Label>
+              <Select value={createParentId} onChange={e => setCreateParentId(e.target.value)} className="mt-1">
                 <option value="">Select parent category</option>
                 {flatCategories.map(c => <option key={c.id} value={c.id}>{`${'-- '.repeat(c.depth)}${c.name}`}</option>)}
               </Select>
@@ -288,8 +330,12 @@ export default function CategoriesPage() {
         <div className="p-6 space-y-4">
           <h2 className="text-lg font-semibold">Edit Category</h2>
           <div>
-            <Label htmlFor="edit-name">Category Name</Label>
-            <Input id="edit-name" value={editCategoryName} onChange={e => setEditCategoryName(e.target.value)} className="mt-1" />
+            <Label>Category Name</Label>
+            <Input value={editCategoryName} onChange={e => setEditCategoryName(e.target.value)} className="mt-1" />
+          </div>
+          <div>
+            <Label>Description</Label>
+            <Textarea value={editCategoryDescription} onChange={e => setEditCategoryDescription(e.target.value)} className="mt-1" rows={2} />
           </div>
           <div>
             <Label>Icon</Label>
@@ -298,6 +344,28 @@ export default function CategoriesPage() {
               <CloudinaryUploader onUpload={url => setEditCategoryIcon(url)} folder="categories/icons" buttonText="Upload" />
             </div>
             {editCategoryIcon && <img src={editCategoryIcon} alt="icon preview" className="mt-2 h-12 w-12 rounded-lg object-cover border border-border" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />}
+          </div>
+          <div>
+            <Label>Sort Order</Label>
+            <Input type="number" value={editSortOrder} onChange={e => setEditSortOrder(parseInt(e.target.value) || 0)} className="mt-1" />
+          </div>
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={editIsFeatured} onChange={e => setEditIsFeatured(e.target.checked)} />
+              Featured category
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={editAllowsCart} onChange={e => setEditAllowsCart(e.target.checked)} />
+              Allows cart
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={editAllowsOrderIntent} onChange={e => setEditAllowsOrderIntent(e.target.checked)} />
+              Allows order intent
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={editIsContactOnly} onChange={e => setEditIsContactOnly(e.target.checked)} />
+              Contact only
+            </label>
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>Cancel</Button>
