@@ -62,8 +62,9 @@ export const ntfyService = {
       return
     }
 
+    console.log('[ntfy] Sending to', `${NTFY_URL}/${NTFY_TOPIC}`, '| Title:', options.title)
     try {
-      await fetch(`${NTFY_URL}/${NTFY_TOPIC}`, {
+      const res = await fetch(`${NTFY_URL}/${NTFY_TOPIC}`, {
         method: 'POST',
         headers: {
           'Title': options.title || 'Kakebe Notification',
@@ -73,8 +74,9 @@ export const ntfyService = {
         },
         body: message
       })
+      console.log('[ntfy] Response status:', res.status)
     } catch (error) {
-      console.error('Failed to send ntfy notification:', error)
+      console.error('[ntfy] Failed to send:', error)
     }
   }
 }

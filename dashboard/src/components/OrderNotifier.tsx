@@ -23,6 +23,8 @@ export function OrderNotifier() {
   useEffect(() => {
     if (!data?.results) return
 
+    console.log('[OrderNotifier] Checking orders:', data.results.length, 'total')
+
     if (isFirstFetch.current) {
       isFirstFetch.current = false
       const twoMinutesAgo = Date.now() - 2 * 60 * 1000
@@ -30,10 +32,10 @@ export function OrderNotifier() {
       data.results.forEach((o: Order) => {
         const orderAge = new Date(o.created_at).getTime()
         if (orderAge < twoMinutesAgo) {
-          // Old order — seed it so we don't notify
           seenOrderIds.add(o.id)
+        } else {
+          console.log('[OrderNotifier] Fresh order on load:', o.order_number, 'age:', Math.round((Date.now() - orderAge) / 1000), 'seconds')
         }
-        // Orders newer than 2 minutes are NOT seeded — they will trigger notification below
       })
     }
 
@@ -41,8 +43,11 @@ export function OrderNotifier() {
       (o: Order) => o.status === 'NEW' && !seenOrderIds.has(o.id)
     )
 
+    console.log('[OrderNotifier] New orders to notify:', newOrders.length)
+
     for (const order of newOrders) {
       seenOrderIds.add(order.id)
+      console.log('[OrderNotifier] Sending ntfy for order:', order.order_number)
       void ntfyService.sendNotification(
         {
           title: '🛒 New Order — Kakebe Shop',
