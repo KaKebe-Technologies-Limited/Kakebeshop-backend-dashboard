@@ -34,7 +34,7 @@ export function OrderNotifier() {
     queryFn: () => fetchOrders({ ordering: '-created_at' }),
     enabled: !!access,
     staleTime: 0,
-    refetchInterval: 30_000,
+    refetchInterval: 5_000,
     refetchIntervalInBackground: true,
   })
 

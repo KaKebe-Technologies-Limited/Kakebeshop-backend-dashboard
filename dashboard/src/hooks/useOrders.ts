@@ -7,8 +7,9 @@ export function useOrders(filters: OrderFilters = {}) {
     queryKey: queryKeys.orders.list(filters as Record<string, unknown>),
     queryFn: () => fetchOrders(filters),
     placeholderData: prev => prev,
-    staleTime: 20_000,
-    refetchInterval: 30_000,
+    staleTime: 0,
+    refetchInterval: 5_000,
+    refetchIntervalInBackground: true,
   })
 }
 

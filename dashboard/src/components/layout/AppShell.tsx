@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
-import { useInactivityLogout } from '@/hooks/useInactivityLogout'
 import { OrderNotifier } from '@/components/OrderNotifier'
 
 const pageTitles: Record<string, string> = {
@@ -23,7 +22,6 @@ const pageTitles: Record<string, string> = {
 export function AppShell() {
   const [collapsed, setCollapsed] = useState(false)
   const { pathname } = useLocation()
-  useInactivityLogout()
   const title = pageTitles[pathname] ?? 'Kakebe Admin'
 
   return (
