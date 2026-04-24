@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Eye, ShieldCheck, Star, Trash2, Ban, PauseCircle, Phone, Mail } from 'lucide-react'
+import { Eye, ShieldCheck, Star, Trash2, Ban, PauseCircle, Phone, Mail, Download } from 'lucide-react'
 import {
   useMerchants, useMerchantDetail,
   useVerifyMerchant, useUpdateMerchant, useDeleteMerchant,
@@ -35,6 +35,37 @@ async function notifyMerchantAction(action: string, merchantName: string, phone:
   )
 }
 
+// Download an image by drawing it to canvas to bypass CDN CORS restrictions
+async function downloadImage(url: string, filename: string) {
+  return new Promise<void>((resolve, reject) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.naturalWidth
+      canvas.height = img.naturalHeight
+      const ctx = canvas.getContext('2d')
+      if (!ctx) { reject(new Error('Canvas not supported')); return }
+      ctx.drawImage(img, 0, 0)
+      canvas.toBlob(blob => {
+        if (!blob) { reject(new Error('Failed to create blob')); return }
+        const a = document.createElement('a')
+        a.href = URL.createObjectURL(blob)
+        a.download = filename
+        a.click()
+        URL.revokeObjectURL(a.href)
+        resolve()
+      }, 'image/png')
+    }
+    img.onerror = () => {
+      // Canvas CORS failed — fall back to opening in new tab
+      window.open(url, '_blank')
+      resolve()
+    }
+    img.src = url
+  })
+}
+
 export default function MerchantsPage() {
   const [sp, setSp] = useSearchParams()
   const page = parseInt(sp.get('page') ?? '1', 10)
@@ -51,6 +82,7 @@ export default function MerchantsPage() {
   const [showImageEdit, setShowImageEdit] = useState(false)
   const [logoUrl, setLogoUrl] = useState('')
   const [coverUrl, setCoverUrl] = useState('')
+  const [downloading, setDownloading] = useState(false)
 
   const { toast } = useToast()
 
@@ -290,7 +322,29 @@ export default function MerchantsPage() {
             )}
 
             <div className="flex gap-4 items-start">
-              <MerchantAvatar logo={detail.logo} name={detail.display_name} size="lg" />
+              <div className="relative group flex-shrink-0">
+                <MerchantAvatar logo={detail.logo} name={detail.display_name} size="lg" />
+                {detail.logo && (
+                  <button
+                    onClick={async () => {
+                      setDownloading(true)
+                      try {
+                        await downloadImage(detail.logo!, `${detail.display_name.replace(/\s+/g, '_')}_logo.png`)
+                        toast({ title: 'Logo downloaded' })
+                      } catch {
+                        toast({ variant: 'destructive', title: 'Download failed' })
+                      } finally {
+                        setDownloading(false)
+                      }
+                    }}
+                    disabled={downloading}
+                    title="Download logo"
+                    className="absolute -bottom-1 -right-1 bg-primary text-white rounded-full p-1 shadow-md hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  >
+                    <Download className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="text-lg font-semibold">{detail.display_name}</h2>
