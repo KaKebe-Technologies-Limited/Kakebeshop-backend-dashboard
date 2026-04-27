@@ -35,33 +35,45 @@ async function notifyMerchantAction(action: string, merchantName: string, phone:
   )
 }
 
-// Download an image by drawing it to canvas to bypass CDN CORS restrictions
+// Download image — fetches the raw file to preserve original format (webp, jpg, png)
 async function downloadImage(url: string, filename: string) {
-  return new Promise<void>((resolve, reject) => {
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
+  try {
+    // Try direct fetch first (works if CDN allows CORS)
+    const res = await fetch(url)
+    if (res.ok) {
+      const blob = await res.blob()
+      // Preserve original extension from content-type or URL
+      const ext = blob.type.split('/')[1]?.replace('jpeg', 'jpg') ?? url.split('.').pop() ?? 'webp'
+      const finalName = filename.replace(/\.[^.]+$/, '') + '.' + ext
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = finalName
+      a.click()
+      URL.revokeObjectURL(a.href)
+      return
+    }
+  } catch { /* fall through to canvas */ }
+
+  // Fallback: canvas (re-encodes as PNG but always works)
+  const img = new Image()
+  img.crossOrigin = 'anonymous'
+  await new Promise<void>((resolve) => {
     img.onload = () => {
       const canvas = document.createElement('canvas')
       canvas.width = img.naturalWidth
       canvas.height = img.naturalHeight
-      const ctx = canvas.getContext('2d')
-      if (!ctx) { reject(new Error('Canvas not supported')); return }
-      ctx.drawImage(img, 0, 0)
+      canvas.getContext('2d')?.drawImage(img, 0, 0)
       canvas.toBlob(blob => {
-        if (!blob) { reject(new Error('Failed to create blob')); return }
+        if (!blob) { window.open(url, '_blank'); resolve(); return }
         const a = document.createElement('a')
         a.href = URL.createObjectURL(blob)
-        a.download = filename
+        a.download = filename.replace(/\.[^.]+$/, '') + '.png'
         a.click()
         URL.revokeObjectURL(a.href)
         resolve()
       }, 'image/png')
     }
-    img.onerror = () => {
-      // Canvas CORS failed — fall back to opening in new tab
-      window.open(url, '_blank')
-      resolve()
-    }
+    img.onerror = () => { window.open(url, '_blank'); resolve() }
     img.src = url
   })
 }

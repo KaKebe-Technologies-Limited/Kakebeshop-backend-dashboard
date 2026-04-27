@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useCategories, useCategoryMutations } from '@/hooks/useCategories'
-import { ChevronRight, ChevronDown, FolderOpen, Folder, Plus, Pencil, Trash2, Power } from 'lucide-react'
+import { ChevronRight, ChevronDown, FolderOpen, Folder, Plus, Pencil, Trash2, Power, Search } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -63,6 +63,7 @@ export default function CategoriesPage() {
   const { toast } = useToast()
 
   const [selected, setSelected] = useState<CategoryTreeNode | null>(null)
+  const [search, setSearch] = useState('')
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -97,6 +98,22 @@ export default function CategoriesPage() {
 
   const treeNodes = useMemo(() => filterActiveNodes(rawTreeNodes), [rawTreeNodes])
   const flatCategories = useMemo(() => flattenTree(treeNodes), [treeNodes])
+
+  // Filter tree by search query
+  const filteredTreeNodes = useMemo(() => {
+    if (!search.trim()) return treeNodes
+    const q = search.toLowerCase()
+    function filterNodes(nodes: CategoryTreeNode[]): CategoryTreeNode[] {
+      return nodes.reduce<CategoryTreeNode[]>((acc, node) => {
+        const children = filterNodes(node.children)
+        if (node.name.toLowerCase().includes(q) || children.length > 0) {
+          acc.push({ ...node, children })
+        }
+        return acc
+      }, [])
+    }
+    return filterNodes(treeNodes)
+  }, [treeNodes, search])
 
   const getErrorMessage = (error: unknown) => {
     if (typeof error === 'object' && error !== null && 'response' in error) {
@@ -204,14 +221,27 @@ export default function CategoriesPage() {
   return (
     <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
       <Card className="overflow-hidden">
-        <CardHeader className="border-b border-border flex flex-row items-center justify-between">
-          <CardTitle>Category Tree</CardTitle>
-          <Button size="sm" onClick={() => setShowCreateDialog(true)}><Plus className="h-4 w-4 mr-1" /> Add</Button>
+        <CardHeader className="border-b border-border flex flex-col gap-2">
+          <div className="flex flex-row items-center justify-between">
+            <CardTitle>Category Tree</CardTitle>
+            <Button size="sm" onClick={() => setShowCreateDialog(true)}><Plus className="h-4 w-4 mr-1" /> Add</Button>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search categories..."
+              className="pl-8 h-8 text-sm"
+            />
+          </div>
         </CardHeader>
-        <div className="overflow-y-auto max-h-[calc(100vh-220px)] p-2">
+        <div className="overflow-y-auto max-h-[calc(100vh-260px)] p-2">
           {isLoading
             ? Array.from({ length: 8 }).map((_, i) => <div key={i} className="mx-3 my-2 h-4 rounded shimmer" style={{ width: `${50 + (i % 3) * 15}%` }} />)
-            : treeNodes.map(node => <TreeNode key={node.id} node={node} selectedId={selected?.id ?? null} onSelect={setSelected} />)}
+            : filteredTreeNodes.length === 0
+              ? <p className="text-xs text-muted-foreground text-center py-8">No categories match your search.</p>
+              : filteredTreeNodes.map(node => <TreeNode key={node.id} node={node} selectedId={selected?.id ?? null} onSelect={setSelected} />)}
         </div>
       </Card>
 

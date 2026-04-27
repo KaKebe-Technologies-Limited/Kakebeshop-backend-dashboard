@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Store, ListChecks, Tag, FolderTree,
   ShoppingBag, BarChart3, Flag, CreditCard, Image, MessageSquare,
   ScrollText, ChevronLeft, ChevronRight, Users, UserCog,
-  Banknote, Ticket, Star, Settings, Shield, Images, ShoppingCart, Bell, Radio,
+  Banknote, Ticket, Star, Settings, Shield, Images, ShoppingCart, Bell, Radio, Pencil,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { dashboardRoutes } from '@/router'
@@ -17,6 +17,7 @@ const iconMap: Record<string, React.ElementType> = {
   'categories': FolderTree,
   'tags': Tag,
   'image-library': Images,
+  'image-editor': Pencil,
   'analytics': BarChart3,
   'reports': Flag,
   'transactions': CreditCard,
@@ -40,7 +41,7 @@ const iconMap: Record<string, React.ElementType> = {
 const navSections = [
   { label: 'General', paths: ['', 'overview'] },
   { label: 'Catalog', paths: ['merchants', 'listings', 'categories', 'tags'] },
-  { label: 'Media', paths: ['image-library', 'banners'] },
+  { label: 'Media', paths: ['image-library', 'image-editor', 'banners'] },
   { label: 'Users', paths: ['customers', 'staff', 'user-registrations', 'role-management'] },
   { label: 'Commerce', paths: ['live-orders', 'orders', 'transactions', 'payouts', 'coupons', 'cart-wishlist'] },
   { label: 'Trust & Safety', paths: ['reviews', 'reports'] },

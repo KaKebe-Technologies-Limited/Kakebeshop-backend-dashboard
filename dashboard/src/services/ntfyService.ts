@@ -19,37 +19,25 @@ const BOT_USER_AGENTS = [
 export const ntfyService = {
   async notifyPageView(pageUrl: string, userAgent: string): Promise<void> {
     await this.sendNotification({
-      title: 'Page View',
-      tags: ['eye'],
-      priority: 'low',
-      userAgent,
+      title: 'Page View', tags: ['eye'], priority: 'low', userAgent,
     }, `Page: ${pageUrl}\nUser-Agent: ${userAgent.substring(0, 50)}`)
   },
 
   async notifyProductViewed(productTitle: string, pageUrl: string, userAgent: string): Promise<void> {
     await this.sendNotification({
-      title: 'Product Viewed',
-      tags: ['shopping_cart'],
-      priority: 'default',
-      userAgent,
+      title: 'Product Viewed', tags: ['shopping_cart'], priority: 'default', userAgent,
     }, `Product: ${productTitle}\nPage: ${pageUrl}\nUser-Agent: ${userAgent.substring(0, 50)}`)
   },
 
   async notifyOrderPlaced(orderType: string, total: string, buyer: string, userAgent: string): Promise<void> {
     await this.sendNotification({
-      title: 'New Order Placed',
-      tags: ['shopping_cart', 'bell'],
-      priority: 'high',
-      userAgent,
+      title: 'New Order Placed', tags: ['shopping_cart', 'bell'], priority: 'high', userAgent,
     }, `Order Type: ${orderType}\nTotal: ${total}\nBuyer: ${buyer}`)
   },
 
   async notifyUserRegistered(userIdentifier: string, source: string, userAgent: string): Promise<void> {
     await this.sendNotification({
-      title: 'New Account Created',
-      tags: ['bust_in_silhouette', 'tada'],
-      priority: 'default',
-      userAgent,
+      title: 'New Account Created', tags: ['bust_in_silhouette', 'tada'], priority: 'default', userAgent,
     }, `User: ${userIdentifier}\nSource: ${source}`)
   },
 
@@ -58,25 +46,21 @@ export const ntfyService = {
   },
 
   async sendNotification(options: NotifyOptions, message: string): Promise<void> {
-    if (options.userAgent && this.isBot(options.userAgent)) {
-      return
-    }
+    if (options.userAgent && this.isBot(options.userAgent)) return
 
-    console.log('[ntfy] Sending to', `${NTFY_URL}/${NTFY_TOPIC}`, '| Title:', options.title)
     try {
-      const res = await fetch(`${NTFY_URL}/${NTFY_TOPIC}`, {
+      await fetch(`${NTFY_URL}/${NTFY_TOPIC}`, {
         method: 'POST',
         headers: {
           'Title': (options.title || 'Kakebe Notification').replace(/[^\x00-\xFF]/g, ''),
           'Tags': options.tags?.join(',') || '',
           'Priority': options.priority || 'default',
-          'Content-Type': 'text/plain'
+          'Content-Type': 'text/plain',
         },
-        body: message
+        body: message,
       })
-      console.log('[ntfy] Response status:', res.status)
-    } catch (error) {
-      console.error('[ntfy] Failed to send:', error)
+    } catch {
+      // Silently fail — ntfy is non-critical
     }
-  }
+  },
 }

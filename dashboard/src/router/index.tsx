@@ -19,6 +19,7 @@ import UserRegistrationsPage from '@/pages/UserRegistrationsPage'
 import VisitorAnalyticsPage from '@/pages/VisitorAnalyticsPage'
 import RoleManagementPage from '@/pages/RoleManagementPage'
 import ImageLibraryPage from '@/pages/ImageLibraryPage'
+import ImageEditorPage from '@/pages/ImageEditorPage'
 import ReviewsPage from '@/pages/ReviewsPage'
 import CartWishlistPage from '@/pages/CartWishlistPage'
 import NotificationsPage from '@/pages/NotificationsPage'
@@ -43,6 +44,7 @@ export const dashboardRoutes: DashboardRoute[] = [
   { path: 'categories', element: <CategoriesPage />, roles: ['super_admin', 'admin'], label: 'Categories' },
   { path: 'tags', element: <TagsPage />, roles: ['super_admin', 'admin'], label: 'Tags' },
   { path: 'image-library', element: <ImageLibraryPage />, roles: ['super_admin', 'admin'], label: 'Image Library' },
+  { path: 'image-editor', element: <ImageEditorPage />, roles: ['super_admin', 'admin'], label: 'Image Editor' },
   { path: 'analytics', element: <AnalyticsPage />, roles: ['super_admin', 'admin', 'moderator'], label: 'Analytics' },
   { path: 'reports', element: <ReportsPage />, roles: ['super_admin', 'admin', 'moderator', 'support'], label: 'Reports' },
   { path: 'transactions', element: <TransactionsPage />, roles: ['super_admin', 'admin'], label: 'Transactions' },

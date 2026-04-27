@@ -34,7 +34,6 @@ interface AdminStats {
   total_images: number
 }
 
-// Build last N days labels
 function lastNDays(n: number) {
   return Array.from({ length: n }, (_, i) => {
     const d = new Date()
@@ -43,10 +42,23 @@ function lastNDays(n: number) {
   })
 }
 
+// Fetch ALL orders for a date range across all pages
+async function fetchAllOrdersForRange(dateFrom: string, dateTo: string) {
+  const allOrders: Array<{ created_at: string }> = []
+  let page = 1
+  while (true) {
+    const data = await fetchOrders({ date_from: dateFrom, date_to: dateTo, ordering: 'created_at', page })
+    allOrders.push(...(data.results ?? []))
+    if (!data.next || allOrders.length >= data.count) break
+    page++
+    if (page > 50) break // safety cap
+  }
+  return allOrders
+}
+
 export default function AnalyticsPage() {
   const [dateRange, setDateRange] = useState<7 | 14 | 30>(7)
 
-  // Admin stats
   const { data: statsData, isLoading: statsLoading } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
@@ -57,14 +69,13 @@ export default function AnalyticsPage() {
     staleTime: 60_000,
   })
 
-  // Orders by date range for daily chart
   const days = lastNDays(dateRange)
   const dateFrom = days[0]
   const dateTo = days[days.length - 1]
 
-  const { data: ordersData, isLoading: ordersLoading } = useQuery({
-    queryKey: ['analytics-orders', dateFrom, dateTo],
-    queryFn: () => fetchOrders({ date_from: dateFrom, date_to: dateTo, ordering: 'created_at' }),
+  const { data: allOrdersForRange, isLoading: ordersLoading } = useQuery({
+    queryKey: ['analytics-orders-all', dateFrom, dateTo],
+    queryFn: () => fetchAllOrdersForRange(dateFrom, dateTo),
     staleTime: 60_000,
   })
 
@@ -78,25 +89,20 @@ export default function AnalyticsPage() {
 
   const [products, services, allMerchants] = results
   const isLoading = statsLoading || results.some(r => r.isLoading)
-
   const stats = statsData
   const productCount = products.data?.count ?? 0
   const serviceCount = services.data?.count ?? 0
   const totalMerchants = allMerchants.data?.count ?? 0
 
-  // Build daily orders chart data
   const dailyOrdersMap: Record<string, number> = {}
   days.forEach(d => { dailyOrdersMap[d] = 0 })
-  ;(ordersData?.results ?? []).forEach(order => {
+  ;(allOrdersForRange ?? []).forEach(order => {
     const day = order.created_at.split('T')[0]
     if (dailyOrdersMap[day] !== undefined) dailyOrdersMap[day]++
   })
-  const dailyOrdersData = days.map(d => ({
-    date: d.slice(5), // MM-DD
-    orders: dailyOrdersMap[d],
-  }))
+  const dailyOrdersData = days.map(d => ({ date: d.slice(5), orders: dailyOrdersMap[d] }))
+  const totalInRange = (allOrdersForRange ?? []).length
 
-  // Order status breakdown
   const orderStatusData = stats ? [
     { name: 'New', value: stats.new_orders },
     { name: 'Completed', value: stats.completed_orders },
@@ -117,7 +123,6 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      {/* KPI Grid from admin stats */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <KPICard label="Total Orders" value={stats?.total_orders ?? '—'} icon={ShoppingBag} color="amber" loading={isLoading} />
         <KPICard label="New Orders" value={stats?.new_orders ?? '—'} icon={Clock} color="blue" loading={isLoading} />
@@ -132,10 +137,14 @@ export default function AnalyticsPage() {
         <KPICard label="Cancelled Orders" value={stats?.cancelled_orders ?? '—'} icon={XCircle} color="slate" loading={isLoading} />
       </div>
 
-      {/* Daily Orders Chart */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Orders by Day</CardTitle>
+          <div>
+            <CardTitle>Orders by Day</CardTitle>
+            {!ordersLoading && (
+              <p className="text-xs text-muted-foreground mt-0.5">{totalInRange} orders in last {dateRange} days</p>
+            )}
+          </div>
           <div className="flex gap-2">
             {([7, 14, 30] as const).map(d => (
               <Button key={d} size="sm" variant={dateRange === d ? 'default' : 'outline'} onClick={() => setDateRange(d)}>
@@ -162,7 +171,6 @@ export default function AnalyticsPage() {
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        {/* Order Status Breakdown */}
         <Card>
           <CardHeader><CardTitle>Order Status</CardTitle></CardHeader>
           <CardContent>
@@ -178,7 +186,6 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
 
-        {/* Listing Types */}
         <Card>
           <CardHeader><CardTitle>Listing Types</CardTitle></CardHeader>
           <CardContent>
@@ -195,7 +202,6 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
 
-        {/* Merchant Verification */}
         <Card>
           <CardHeader><CardTitle>Merchant Status</CardTitle></CardHeader>
           <CardContent>
@@ -213,7 +219,6 @@ export default function AnalyticsPage() {
         </Card>
       </div>
 
-      {/* Listings & Merchants Bar */}
       <Card>
         <CardHeader><CardTitle>Platform Overview</CardTitle></CardHeader>
         <CardContent>
