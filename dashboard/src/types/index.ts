@@ -130,7 +130,7 @@ export interface Listing {
   listing_type: 'PRODUCT' | 'SERVICE'
   category: string
   category_name: string
-  price_type: 'FIXED' | 'RANGE'
+  price_type: 'FIXED' | 'RANGE' | 'ON_REQUEST'
   price: string | null
   price_min: string | null
   price_max: string | null
@@ -141,6 +141,7 @@ export interface Listing {
   views_count: number
   contact_count: number
   primary_image: ListingImage | null
+  delivery_modes?: ('IN_PERSON' | 'REMOTE' | 'PICKUP' | 'DELIVERY')[]
   created_at: string
   updated_at: string
 }
@@ -177,6 +178,7 @@ export interface Order {
   buyer_phone: string | null
   merchant: string
   merchant_name: string
+  merchant_phone: string | null
   address: UserAddress | null
   notes: string | null
   cancellation_reason: string | null
@@ -279,21 +281,38 @@ export interface PushToken {
 }
 
 // ─── Banner ──────────────────────────────────────────────────────────────────
-export type BannerPlacement = 'HOME_TOP' | 'HOME_MIDDLE' | 'CATEGORY' | 'SEARCH'
+export type BannerPlacement = 'HOME_TOP' | 'HOME_MIDDLE' | 'CATEGORY_TOP' | 'SEARCH_TOP'
+export type BannerDisplayType = 'BANNER' | 'CAROUSEL' | 'AD'
+export type BannerLinkType = 'NONE' | 'URL' | 'CATEGORY' | 'LISTING' | 'LISTINGS'
 
 export interface Banner {
   id: string
   title: string
+  description?: string
   image: string
-  link_url: string | null
+  mobile_image?: string
+  link_url?: string | null
+  link_type?: BannerLinkType
+  link_category?: string | null
+  category_name?: string
+  cta_text?: string
   placement: BannerPlacement
+  display_type?: BannerDisplayType
+  platform?: string
   is_active: boolean
   is_verified: boolean
-  click_count: number
-  impression_count: number
+  is_currently_active?: boolean
+  sort_order?: number
+  impressions?: number
+  clicks?: number
+  click_through_rate?: string
+  // Legacy field names kept for backward compat
+  click_count?: number
+  impression_count?: number
   start_date: string | null
   end_date: string | null
   created_at: string
+  updated_at?: string
 }
 
 // ─── Cart & Wishlist ─────────────────────────────────────────────────────────
@@ -404,4 +423,40 @@ export interface Conversation {
   created_at: string
   last_message: Message | null
   unread_count: string
+}
+
+// ─── Analytics ───────────────────────────────────────────────────
+export interface DailyAnalyticsSnapshot {
+  date: string
+  total_users: number
+  total_merchants: number
+  total_listings: number
+  total_orders: number
+  total_revenue: string
+  new_users: number
+  active_users: number
+  completed_orders: number
+  cancelled_orders: number
+}
+
+export interface MerchantPerformanceMetric {
+  merchant_id: string
+  merchant_name: string
+  order_count: number
+  total_revenue: string
+}
+
+export interface MerchantPerformance {
+  by_order_count: MerchantPerformanceMetric[]
+  by_order_value: MerchantPerformanceMetric[]
+}
+
+export interface OrderHealth {
+  completed_orders: number
+  cancelled_orders: number
+}
+
+export interface UserEngagement {
+  new_users: number
+  active_users: number
 }
