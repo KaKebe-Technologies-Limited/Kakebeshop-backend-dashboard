@@ -3,6 +3,7 @@
 .qwen/
 dashboard/.qwen/
 dashboard/ .claude/
+.worktrees/
 
 .vercel
 .env*.local
