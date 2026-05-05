@@ -19,16 +19,6 @@ export function AnalyticsDashboard() {
   const userEngDaily = useUserEngagement('daily')
   const userEngWeekly = useUserEngagement('weekly')
 
-  const isLoading = [
-    dailyAnalytics,
-    merchantPerfDaily,
-    merchantPerfWeekly,
-    orderHealthDaily,
-    orderHealthWeekly,
-    userEngDaily,
-    userEngWeekly,
-  ].some(q => q.isLoading)
-
   return (
     <div className="space-y-6">
       {/* Error states */}

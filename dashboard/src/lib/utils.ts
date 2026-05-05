@@ -13,11 +13,12 @@ export function formatUGX(amount: string | number | null | undefined): string {
 }
 
 export function formatPriceRange(
-  priceType: 'FIXED' | 'RANGE',
+  priceType: 'FIXED' | 'RANGE' | 'ON_REQUEST',
   price: string | null,
   priceMin: string | null,
   priceMax: string | null
 ): string {
+  if (priceType === 'ON_REQUEST') return 'On Request'
   if (priceType === 'FIXED') return formatUGX(price)
   if (priceMin && priceMax) return `${formatUGX(priceMin)} – ${formatUGX(priceMax)}`
   if (priceMin) return `From ${formatUGX(priceMin)}`

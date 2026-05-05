@@ -60,9 +60,8 @@ export async function fetchOrderGroups(filters: OrderFilters = {}) {
   const params = Object.fromEntries(
     Object.entries(filters).filter(([, v]) => v !== '' && v !== undefined)
   )
-  const res = await apiClient.get<any>('/api/v1/order-groups/', { params })
+  const res = await apiClient.get<any>('/api/v1/orders/order-groups/', { params })
   const raw = res.data
-  // Normalize: backend may use { success, count, data } or standard pagination
   return {
     count: raw.count ?? 0,
     total_pages: raw.total_pages ?? (Math.ceil((raw.count ?? 0) / 20) || 1),
@@ -92,6 +91,6 @@ interface CreateOrderPayload {
 }
 
 export async function createOrder(payload: CreateOrderPayload) {
-  const res = await apiClient.post('/api/v1/orders/', payload)
+  const res = await apiClient.post('/api/v1/admin/orders/', payload)
   return res.data
 }

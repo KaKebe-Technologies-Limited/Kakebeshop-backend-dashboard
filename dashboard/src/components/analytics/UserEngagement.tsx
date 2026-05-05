@@ -1,4 +1,4 @@
-import { UserEngagement } from '@/types'
+import type { UserEngagement } from '@/types'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { MdPersonAdd, MdTrendingUp } from 'react-icons/md'
 

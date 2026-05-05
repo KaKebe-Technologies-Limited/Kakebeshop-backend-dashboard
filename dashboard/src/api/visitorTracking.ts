@@ -1,12 +1,5 @@
 import apiClient from './client'
 
-interface PageView {
-  page_url: string
-  page_title: string
-  product_id: string | null
-  timestamp: string
-}
-
 interface VisitorAnalytics {
   total_visitors: number
   page_views: number
@@ -23,19 +16,33 @@ interface RealtimeVisitor {
   is_bot: boolean
 }
 
+// The live backend has no dedicated visitor-tracking endpoints.
+// We use activity-logs as the closest available data source.
 export async function fetchVisitorAnalytics(): Promise<VisitorAnalytics> {
-  const response = await apiClient.get('/analytics/visitors')
-  return response.data
+  try {
+    const res = await apiClient.get<{ count: number; results: Array<{ activity_type: string; metadata?: Record<string, unknown>; ip_address?: string }> }>(
+      '/api/v1/activity-logs/',
+      { params: { page_size: 100 } }
+    )
+    const results = res.data.results ?? []
+    const pageViews = results.filter(r => r.activity_type === 'VIEW_LISTING').length
+    return {
+      total_visitors: res.data.count ?? 0,
+      page_views: pageViews,
+      bot_percentage: 0,
+      top_pages: [],
+      top_products: [],
+    }
+  } catch {
+    return { total_visitors: 0, page_views: 0, bot_percentage: 0, top_pages: [], top_products: [] }
+  }
 }
 
 export async function fetchRealtimeVisitors(): Promise<RealtimeVisitor[]> {
-  const response = await apiClient.get('/analytics/visitors/realtime')
-  return response.data
+  // No realtime endpoint exists — return empty
+  return []
 }
 
-export async function trackVisitorActivity(sessionId: string, pageView: PageView): Promise<void> {
-  await apiClient.post('/analytics/visitors/track', {
-    session_id: sessionId,
-    ...pageView
-  })
+export async function trackVisitorActivity(_sessionId: string, _pageView: unknown): Promise<void> {
+  // No tracking endpoint exists in the live API
 }

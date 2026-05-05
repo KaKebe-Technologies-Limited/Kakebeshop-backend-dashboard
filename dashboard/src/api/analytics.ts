@@ -4,7 +4,6 @@ import type {
   MerchantPerformance,
   OrderHealth,
   UserEngagement,
-  PaginatedResponse,
 } from '@/types'
 
 interface BackendResponse<T> {

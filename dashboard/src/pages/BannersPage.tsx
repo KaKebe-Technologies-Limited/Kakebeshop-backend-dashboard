@@ -17,9 +17,9 @@ import { useToast } from '@/components/ui/use-toast'
 import { Eye, MousePointer, Pencil, Plus, Trash2 } from 'lucide-react'
 import type { Banner } from '@/types'
 
-const placements = ['CATEGORY_TOP', 'HOME_TOP', 'HOME_MIDDLE', 'SEARCH', 'CATEGORY'] as const
-const displayTypes = ['BANNER', 'CAROUSEL'] as const
-const linkTypes = ['NONE', 'URL', 'CATEGORY'] as const
+const placements = ['HOME_TOP', 'HOME_MIDDLE', 'CATEGORY_TOP', 'SEARCH_TOP'] as const
+const displayTypes = ['BANNER', 'CAROUSEL', 'AD'] as const
+const linkTypes = ['NONE', 'URL', 'CATEGORY', 'LISTING', 'LISTINGS'] as const
 
 type Placement = typeof placements[number]
 type DisplayType = typeof displayTypes[number]
@@ -277,8 +277,8 @@ export default function BannersPage() {
                     <p className="text-xs text-muted-foreground">{formatDate(b.start_date)} – {formatDate(b.end_date)}</p>
                   </div>
                   <div className="flex gap-4 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{(b.impression_count ?? 0).toLocaleString()}</span>
-                    <span className="flex items-center gap-1"><MousePointer className="h-3 w-3" />{(b.click_count ?? 0).toLocaleString()}</span>
+                    <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{(b.impressions ?? b.impression_count ?? 0).toLocaleString()}</span>
+                    <span className="flex items-center gap-1"><MousePointer className="h-3 w-3" />{(b.clicks ?? b.click_count ?? 0).toLocaleString()}</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {b.is_verified

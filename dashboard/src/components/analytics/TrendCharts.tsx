@@ -1,5 +1,5 @@
-import { DailyAnalyticsSnapshot } from '@/types'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import type { DailyAnalyticsSnapshot } from '@/types'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 
 interface TrendChartsProps {

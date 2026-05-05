@@ -1,5 +1,4 @@
-import { DailyAnalyticsSnapshot } from '@/types'
-import { KPICard } from '@/components/shared/KPICard'
+import type { DailyAnalyticsSnapshot } from '@/types'
 import {
   MdPeople,
   MdStorefront,
@@ -9,10 +8,10 @@ import {
 
 interface DailyMetricsCardsProps {
   data: DailyAnalyticsSnapshot[]
-  isLoading: boolean
+  isLoading?: boolean
 }
 
-export function DailyMetricsCards({ data, isLoading }: DailyMetricsCardsProps) {
+export function DailyMetricsCards({ data }: DailyMetricsCardsProps) {
   if (!data || data.length === 0) {
     return <div className="text-muted-foreground text-sm">No analytics data available</div>
   }

@@ -1,4 +1,4 @@
-import { OrderHealth } from '@/types'
+import type { OrderHealth } from '@/types'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { MdCheckCircle, MdCancel } from 'react-icons/md'
 
@@ -8,7 +8,7 @@ interface OrderHealthProps {
   isLoading: boolean
 }
 
-export function OrderHealthCard({ data, period, isLoading }: OrderHealthProps) {
+export function OrderHealthCard({ data, isLoading }: OrderHealthProps) {
   if (isLoading) {
     return (
       <div className="grid gap-4 lg:grid-cols-2">
@@ -29,7 +29,6 @@ export function OrderHealthCard({ data, period, isLoading }: OrderHealthProps) {
 
   const total = data.completed_orders + data.cancelled_orders
   const completionRate = total === 0 ? 0 : Math.round((data.completed_orders / total) * 100)
-  const title = period === 'daily' ? "Today's Orders" : "This Week's Orders"
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">

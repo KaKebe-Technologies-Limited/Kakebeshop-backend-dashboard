@@ -1,4 +1,4 @@
-import { MerchantPerformance } from '@/types'
+import type { MerchantPerformance } from '@/types'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { formatUGX } from '@/lib/utils'
 

@@ -98,6 +98,11 @@ export function OrderDetailDialog({ orderId, open, onClose }: OrderDetailDialogP
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Merchant</p>
               <p className="text-sm font-semibold">{order.merchant_name}</p>
+              {order.merchant_phone && (
+                <a href={`tel:${order.merchant_phone}`} className="flex items-center gap-1 text-xs text-primary mt-1 hover:underline">
+                  <Phone className="h-3 w-3" /> {order.merchant_phone}
+                </a>
+              )}
             </div>
           </div>
 

@@ -1,9 +1,11 @@
 import apiClient from './client'
 import type { Report, Transaction, Banner, PaginatedResponse, AuditLog, ListingReview, MerchantReview, MerchantScore, Notification, PushToken } from '@/types'
 
-// Content Reports
+// Content Reports — backend only has POST (user-submitted reports), no admin list endpoint
 export async function fetchReports(params: Record<string, unknown> = {}) {
-  const res = await apiClient.get<PaginatedResponse<Report>>('/api/v1/reports/', { params })
+  // Reports are user-submitted; the admin list is via audit-logs or activity-logs
+  // Fall back to activity-logs which is the closest admin equivalent
+  const res = await apiClient.get<PaginatedResponse<Report>>('/api/v1/activity-logs/', { params })
   return res.data
 }
 
@@ -18,9 +20,9 @@ export interface BannerPayload {
   title: string
   image: string
   mobile_image?: string
-  placement: string
-  display_type?: string
-  link_type?: string
+  placement: 'HOME_TOP' | 'HOME_MIDDLE' | 'CATEGORY_TOP' | 'SEARCH_TOP'
+  display_type?: 'BANNER' | 'CAROUSEL' | 'AD'
+  link_type?: 'NONE' | 'URL' | 'CATEGORY' | 'LISTING' | 'LISTINGS'
   link_url?: string | null
   cta_text?: string
   is_active?: boolean
@@ -103,12 +105,13 @@ export async function markAllNotificationsRead() {
 }
 
 export async function fetchPushTokens() {
-  const res = await apiClient.get<{ success: boolean; tokens: PushToken[]; count: number }>('/api/v1/push-tokens/')
-  return res.data
+  const res = await apiClient.get<PaginatedResponse<PushToken>>('/api/v1/push-tokens/')
+  // Normalize: backend returns standard paginated response
+  return { tokens: res.data.results ?? [], count: res.data.count ?? 0 }
 }
 
-// Notifications unread count
+// Notifications unread count — dedicated endpoint
 export async function fetchUnreadCount() {
-  const res = await apiClient.get<{ count: number; results?: unknown[] }>('/api/v1/notifications/')
+  const res = await apiClient.get<{ count: number }>('/api/v1/notifications/unread_count/')
   return res.data.count ?? 0
 }
